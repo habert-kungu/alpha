@@ -37,8 +37,9 @@ function generateMarketData(
     })
   }
 
-  if (data.length > 0) {
-    data[data.length - 1].price = targetValue
+  const lastItem = data[data.length - 1]
+  if (lastItem) {
+    lastItem.price = targetValue
   }
 
   return data
