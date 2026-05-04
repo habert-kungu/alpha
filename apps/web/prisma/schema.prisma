@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  password      String?
+  name          String?
+  telegram      String?
+  walletAddress String?
+  role          String         @default("user")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  investments   Investment[]
+  transactions  Transaction[]
+  cycles        Cycle[]
+}
+
+model Investment {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  pool        String
+  amount      Float
+  txHash      String?
+  network     String    @default("TRC20")
+  status      String    @default("pending")
+  roi         Float
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  cycles      Cycle[]
+}
+
+model Transaction {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  type        String
+  amount      Float
+  netAmount   Float?
+  fee         Float?
+  currency    String    @default("USDT")
+  txHash      String?
+  status      String    @default("pending")
+  note        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Cycle {
+  id            String    @id @default(cuid())
+  investmentId  String
+  investment    Investment @relation(fields: [investmentId], references: [id])
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  startValue    Float
+  currentValue  Float
+  targetValue   Float
+  progress      Float     @default(0)
+  status        String    @default("active")
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Settings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

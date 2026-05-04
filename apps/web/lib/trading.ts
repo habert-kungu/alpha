@@ -1,0 +1,185 @@
+export type PoolType = 'daily' | 'weekly'
+
+export interface PoolConfig {
+  name: PoolType
+  durationDays: number
+  roiMultiplier: number
+}
+
+export const POOLS: Record<PoolType, PoolConfig> = {
+  daily: {
+    name: 'daily',
+    durationDays: 1,
+    roiMultiplier: 6.4,
+  },
+  weekly: {
+    name: 'weekly',
+    durationDays: 7,
+    roiMultiplier: 8,
+  },
+}
+
+export const WITHDRAWAL_TAX_RATE = 0.165 // 16.5%
+
+export interface Investment {
+  id: string
+  userId: string
+  pool: PoolType
+  amount: number
+  txHash: string
+  status: 'pending' | 'active' | 'completed' | 'rejected'
+  createdAt: Date
+  completedAt?: Date
+  network: string
+  notes?: string
+}
+
+export interface CycleProgress {
+  investment: Investment
+  startValue: number
+  currentValue: number
+  targetValue: number
+  progressPercent: number
+  daysRemaining: number
+  status: 'active' | 'completed' | 'pending'
+  marketFluctuations: number[]
+}
+
+export interface UserStats {
+  totalAssets: number
+  yesterdayPnl: number
+  pendingReturns: number
+  totalProfit: number
+  activeCycles: CycleProgress[]
+}
+
+export interface WithdrawalCalculation {
+  grossAmount: number
+  taxAmount: number
+  netAmount: number
+}
+
+export function calculateTargetReturn(amount: number, pool: PoolType): number {
+  const config = POOLS[pool]
+  return Math.round(amount * config.roiMultiplier)
+}
+
+export function calculateWithdrawal(amount: number): WithdrawalCalculation {
+  const taxAmount = Math.round(amount * WITHDRAWAL_TAX_RATE * 100) / 100
+  const netAmount = Math.round((amount - taxAmount) * 100) / 100
+  return {
+    grossAmount: Math.round(amount * 100) / 100,
+    taxAmount,
+    netAmount,
+  }
+}
+
+export function generateMarketFluctuations(days: number, targetValue: number, startValue: number): number[] {
+  const fluctuations: number[] = []
+  const progressPerDay = 1 / days
+  const totalGain = targetValue - startValue
+  
+  for (let day = 0; day < days; day++) {
+    const expectedProgress = (day + 1) * progressPerDay
+    const baseValue = startValue + (totalGain * expectedProgress)
+    
+    const noise = (Math.random() - 0.5) * (totalGain * 0.15)
+    const dailyValue = Math.max(startValue, Math.min(targetValue, baseValue + noise))
+    fluctuations.push(Math.round(dailyValue * 100) / 100)
+  }
+  
+  return fluctuations
+}
+
+export function calculateCycleProgress(investment: Investment): CycleProgress {
+  const config = POOLS[investment.pool]
+  const now = new Date()
+  const startTime = new Date(investment.createdAt)
+  const endTime = new Date(startTime.getTime() + config.durationDays * 24 * 60 * 60 * 1000)
+  
+  const totalMs = endTime.getTime() - startTime.getTime()
+  const elapsedMs = now.getTime() - startTime.getTime()
+  
+  const progressPercent = Math.min(100, Math.max(0, (elapsedMs / totalMs) * 100))
+  
+  const targetValue = calculateTargetReturn(investment.amount, investment.pool)
+  
+  const totalDays = config.durationDays
+  const currentDay = Math.floor((progressPercent / 100) * totalDays)
+  const fluctuations = generateMarketFluctuations(totalDays, targetValue, investment.amount)
+  const currentValue = fluctuations[Math.min(currentDay, fluctuations.length - 1)] || investment.amount
+  
+  const daysRemaining = Math.max(0, Math.ceil((endTime.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)))
+  
+  let status: 'active' | 'completed' | 'pending' = 'pending'
+  if (investment.status === 'active') {
+    status = progressPercent >= 100 ? 'completed' : 'active'
+  } else if (investment.status === 'completed') {
+    status = 'completed'
+  }
+  
+  return {
+    investment,
+    startValue: investment.amount,
+    currentValue: Math.round(currentValue * 100) / 100,
+    targetValue,
+    progressPercent: Math.round(progressPercent * 10) / 10,
+    daysRemaining,
+    status,
+    marketFluctuations: fluctuations,
+  }
+}
+
+export function calculateUserStats(investments: Investment[]): UserStats {
+  const activeInvestments = investments.filter(i => i.status === 'active' || i.status === 'pending')
+  const completedInvestments = investments.filter(i => i.status === 'completed')
+  
+  const activeCycles = activeInvestments.map(calculateCycleProgress)
+  
+  const totalAssets = completedInvestments.reduce((sum, i) => 
+    sum + calculateTargetReturn(i.amount, i.pool), 0
+  ) + activeInvestments.reduce((sum, i) => sum + i.amount, 0)
+  
+  const pendingReturns = activeCycles
+    .filter(c => c.status === 'active')
+    .reduce((sum, c) => sum + (c.targetValue - c.currentValue), 0)
+  
+  const totalProfit = completedInvestments.reduce((sum, i) => 
+    sum + (calculateTargetReturn(i.amount, i.pool) - i.amount), 0
+  )
+  
+  return {
+    totalAssets: Math.round(totalAssets * 100) / 100,
+    yesterdayPnl: 0,
+    pendingReturns: Math.round(pendingReturns * 100) / 100,
+    totalProfit: Math.round(totalProfit * 100) / 100,
+    activeCycles,
+  }
+}
+
+export function generateChartData(investment: Investment, days: number = 10): { day: number; value: number }[] {
+  const config = POOLS[investment.pool]
+  const targetValue = calculateTargetReturn(investment.amount, investment.pool)
+  const fluctuations = generateMarketFluctuations(days, targetValue, investment.amount)
+  
+  return fluctuations.map((value, i) => ({
+    day: i + 1,
+    value,
+  }))
+}
+
+export function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+  }).format(amount)
+}
+
+export function formatDate(date: Date): string {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date)
+}
