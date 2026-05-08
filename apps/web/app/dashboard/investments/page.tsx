@@ -5,9 +5,15 @@ import Link from "next/link"
 
 const BINANCE_WALLET = "TP3HUdgXCsVBwnRARKEouqYo9USdZTUcbg"
 
-function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+function Card({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode
+  className?: string
+}) {
   return (
-    <div className={`bg-card border border-border rounded-lg ${className}`}>
+    <div className={`rounded-lg border border-border bg-card ${className}`}>
       {children}
     </div>
   )
@@ -33,16 +39,16 @@ export default function InvestmentsPage() {
   const handleSubmit = async () => {
     setSubmitting(true)
     setSubmitError("")
-    
+
     try {
-      const res = await fetch('/api/user/investments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/user/investments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: parseFloat(amount),
           pool: selectedPlan,
           txHash: txHash.trim(),
-          network: 'TRC20',
+          network: "TRC20",
           notes,
         }),
       })
@@ -50,101 +56,142 @@ export default function InvestmentsPage() {
       const data = await res.json()
 
       if (!res.ok) {
-        setSubmitError(data.error || 'Failed to submit investment')
+        setSubmitError(data.error || "Failed to submit investment")
         return
       }
 
-      const roi = selectedPlan === 'weekly' ? '8x' : '6.4x'
-      const message = `🎯 *New Stake Request*\n\n*Plan:* ${selectedPlan === 'weekly' ? 'Weekly Pool' : '24H Pool'} (${roi} ROI)\n*Amount:* $${amount}\n*Network:* USDT (TRC20)\n*TX Hash:* ${txHash}\n*DB ID:* ${data.investment?.id}\n${notes ? `\n*Notes:* ${notes}` : ''}`
-      const telegramUrl = `https://t.me/Sir_khanbashiri?text=${encodeURIComponent(message)}`
-      window.open(telegramUrl, '_blank')
-      
+      const roi = selectedPlan === "weekly" ? "8x" : "6.4x"
+      const message = `🎯 *New Stake Request*\n\n*Plan:* ${selectedPlan === "weekly" ? "Weekly Pool" : "24H Pool"} (${roi} ROI)\n*Amount:* $${amount}\n*Network:* USDT (TRC20)\n*TX Hash:* ${txHash}\n*DB ID:* ${data.investment?.id}\n${notes ? `\n*Notes:* ${notes}` : ""}`
+      const telegramUrl = `https://t.me/nextleveltradersw?text=${encodeURIComponent(message)}`
+      window.open(telegramUrl, "_blank")
+
       setSubmitSuccess(true)
       setShowConfirm(false)
       setAmount("")
       setTxHash("")
       setNotes("")
-      
     } catch (error) {
-      setSubmitError('Network error. Please try again.')
+      setSubmitError("Network error. Please try again.")
     } finally {
       setSubmitting(false)
     }
   }
 
-  const calculatedReturn = amount ? Math.round(parseFloat(amount) * (selectedPlan === 'weekly' ? 8 : 6.4)) : 0
+  const calculatedReturn = amount
+    ? Math.round(parseFloat(amount) * (selectedPlan === "weekly" ? 8 : 6.4))
+    : 0
   const fee = amount ? Math.round(parseFloat(amount) * 0.165) : 0
   const net = amount ? parseFloat(amount) - fee : 0
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center sm:gap-0">
         <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-foreground">Buy Crypto</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Stake to earn guaranteed returns</p>
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">
+            Buy Crypto
+          </h1>
+          <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
+            Stake to earn guaranteed returns
+          </p>
         </div>
-        <Link href="/dashboard" className="text-xs text-muted-foreground hover:text-foreground">
+        <Link
+          href="/dashboard"
+          className="text-xs text-muted-foreground hover:text-foreground"
+        >
           ← Back to Dashboard
         </Link>
       </div>
 
       {/* Plan Selection */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4">
         <button
           onClick={() => setSelectedPlan("daily")}
-          className={`p-3 sm:p-4 rounded-lg border bg-card text-left hover:bg-secondary/50 transition-all ${selectedPlan === 'daily' ? 'ring-2 ring-[oklch(0.21_0_0)] border-[oklch(0.21_0_0)]' : 'border-border'}`}
+          className={`rounded-lg border bg-card p-3 text-left transition-all hover:bg-secondary/50 sm:p-4 ${selectedPlan === "daily" ? "border-[oklch(0.21_0_0)] ring-2 ring-[oklch(0.21_0_0)]" : "border-border"}`}
         >
-          <div className="flex items-start justify-between mb-2">
+          <div className="mb-2 flex items-start justify-between">
             <div>
-              <div className="text-sm sm:text-base font-medium text-foreground">24H Pool</div>
-              <div className="text-[10px] sm:text-xs text-muted-foreground">24 hours</div>
+              <div className="text-sm font-medium text-foreground sm:text-base">
+                24H Pool
+              </div>
+              <div className="text-[10px] text-muted-foreground sm:text-xs">
+                24 hours
+              </div>
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-semibold text-foreground">6.4x ROI</div>
+          <div className="text-lg font-semibold text-foreground sm:text-xl">
+            6.4x ROI
+          </div>
         </button>
 
         <button
           onClick={() => setSelectedPlan("weekly")}
-          className={`p-3 sm:p-4 rounded-lg border bg-card text-left hover:bg-secondary/50 transition-all relative ${selectedPlan === 'weekly' ? 'ring-2 ring-[oklch(0.21_0_0)] border-[oklch(0.21_0_0)]' : 'border-border'}`}
+          className={`relative rounded-lg border bg-card p-3 text-left transition-all hover:bg-secondary/50 sm:p-4 ${selectedPlan === "weekly" ? "border-[oklch(0.21_0_0)] ring-2 ring-[oklch(0.21_0_0)]" : "border-border"}`}
         >
-          <div className="absolute -top-1.5 right-2 sm:right-3 text-[9px] sm:text-[10px] font-medium px-1.5 sm:px-2 py-0.5 bg-[oklch(0.21_0_0)] text-[oklch(1_0_180)] rounded">Popular</div>
-          <div className="flex items-start justify-between mb-2">
+          <div className="absolute -top-1.5 right-2 rounded bg-[oklch(0.21_0_0)] px-1.5 py-0.5 text-[9px] font-medium text-[oklch(1_0_180)] sm:right-3 sm:px-2 sm:text-[10px]">
+            Popular
+          </div>
+          <div className="mb-2 flex items-start justify-between">
             <div>
-              <div className="text-sm sm:text-base font-medium text-foreground">Weekly Pool</div>
-              <div className="text-[10px] sm:text-xs text-muted-foreground">7 days</div>
+              <div className="text-sm font-medium text-foreground sm:text-base">
+                Weekly Pool
+              </div>
+              <div className="text-[10px] text-muted-foreground sm:text-xs">
+                7 days
+              </div>
             </div>
           </div>
-          <div className="text-lg sm:text-xl font-semibold text-foreground">8x ROI</div>
+          <div className="text-lg font-semibold text-foreground sm:text-xl">
+            8x ROI
+          </div>
         </button>
       </div>
 
       {/* Deposit Form */}
       <Card className="p-4 sm:p-6">
-        <h2 className="text-base sm:text-lg font-medium text-foreground mb-4 sm:mb-6">Make a Deposit</h2>
-        
+        <h2 className="mb-4 text-base font-medium text-foreground sm:mb-6 sm:text-lg">
+          Make a Deposit
+        </h2>
+
         <div className="space-y-4 sm:space-y-5">
           {/* Wallet Address */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-foreground mb-2">Deposit Address (Binance)</label>
-            <div className="p-2.5 sm:p-3.5 border border-border rounded-lg bg-secondary/30">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
-                <code className="text-[10px] sm:text-xs text-foreground font-mono break-all">{BINANCE_WALLET}</code>
+            <label className="mb-2 block text-xs font-medium text-foreground sm:text-sm">
+              Deposit Address (Binance)
+            </label>
+            <div className="rounded-lg border border-border bg-secondary/30 p-2.5 sm:p-3.5">
+              <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
+                <code className="font-mono text-[10px] break-all text-foreground sm:text-xs">
+                  {BINANCE_WALLET}
+                </code>
                 <button
                   type="button"
                   onClick={copyAddress}
-                  className="shrink-0 px-2.5 sm:px-3 py-1.5 bg-[oklch(0.21_0_0)] text-[oklch(1_0_180)] rounded text-[10px] sm:text-xs font-medium hover:opacity-90 transition-opacity flex items-center gap-1.5 sm:gap-2"
+                  className="flex shrink-0 items-center gap-1.5 rounded bg-[oklch(0.21_0_0)] px-2.5 py-1.5 text-[10px] font-medium text-[oklch(1_0_180)] transition-opacity hover:opacity-90 sm:gap-2 sm:px-3 sm:text-xs"
                 >
                   {copiedAddress ? (
                     <>
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="20 6 9 17 4 12"/>
+                      <svg
+                        className="h-3 w-3 sm:h-4 sm:w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
                       </svg>
                       Copied
                     </>
                   ) : (
                     <>
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                      <svg
+                        className="h-3 w-3 sm:h-4 sm:w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <rect x="9" y="9" width="13" height="13" rx="2" />
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                       </svg>
                       Copy
                     </>
@@ -155,28 +202,33 @@ export default function InvestmentsPage() {
           </div>
 
           {/* Warning */}
-          <div className="p-3 bg-[oklch(0.6_0_0)/0.08] border border-[oklch(0.6_0_0)/0.15] rounded-lg">
-            <p className="text-[10px] sm:text-xs text-foreground">
-              <span className="font-medium">Important:</span> Send exact amount. After sending, fill details below and submit.
+          <div className="rounded-lg border border-[oklch(0.6_0_0)/0.15] bg-[oklch(0.6_0_0)/0.08] p-3">
+            <p className="text-[10px] text-foreground sm:text-xs">
+              <span className="font-medium">Important:</span> Send exact amount.
+              After sending, fill details below and submit.
             </p>
           </div>
 
           {/* Amount & Network */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5 sm:mb-2">Amount (USD)</label>
+              <label className="mb-1.5 block text-xs font-medium text-foreground sm:mb-2 sm:text-sm">
+                Amount (USD)
+              </label>
               <input
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="e.g. 500"
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-border rounded-lg text-sm sm:text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[oklch(0.21_0_0)]"
+                className="w-full rounded-lg border border-border px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-[oklch(0.21_0_0)] focus:outline-none sm:px-4 sm:py-3 sm:text-base"
               />
             </div>
 
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5 sm:mb-2">Network</label>
-              <div className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-border rounded-lg text-sm sm:text-base text-muted-foreground bg-secondary/30">
+              <label className="mb-1.5 block text-xs font-medium text-foreground sm:mb-2 sm:text-sm">
+                Network
+              </label>
+              <div className="w-full rounded-lg border border-border bg-secondary/30 px-3 py-2.5 text-sm text-muted-foreground sm:px-4 sm:py-3 sm:text-base">
                 USDT (TRC20)
               </div>
             </div>
@@ -184,15 +236,23 @@ export default function InvestmentsPage() {
 
           {/* Preview Return */}
           {amount && parseFloat(amount) > 0 && (
-            <div className="p-3 sm:p-4 bg-[oklch(0.55_0_150)/8] border border-[oklch(0.55_0_150)/20] rounded-lg">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0">
+            <div className="rounded-lg border border-[oklch(0.55_0_150)/20] bg-[oklch(0.55_0_150)/8] p-3 sm:p-4">
+              <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
                 <div>
-                  <div className="text-[10px] sm:text-xs text-muted-foreground uppercase font-mono mb-1">Expected Return</div>
-                  <div className="text-lg sm:text-xl font-bold text-[oklch(0.55_0_150)]">${calculatedReturn.toLocaleString()}</div>
+                  <div className="mb-1 font-mono text-[10px] text-muted-foreground uppercase sm:text-xs">
+                    Expected Return
+                  </div>
+                  <div className="text-lg font-bold text-[oklch(0.55_0_150)] sm:text-xl">
+                    ${calculatedReturn.toLocaleString()}
+                  </div>
                 </div>
                 <div className="text-left sm:text-right">
-                  <div className="text-[10px] sm:text-xs text-muted-foreground uppercase font-mono mb-1">After 16.5% fee</div>
-                  <div className="text-sm sm:text-base font-semibold text-foreground">${net.toLocaleString()} payout</div>
+                  <div className="mb-1 font-mono text-[10px] text-muted-foreground uppercase sm:text-xs">
+                    After 16.5% fee
+                  </div>
+                  <div className="text-sm font-semibold text-foreground sm:text-base">
+                    ${net.toLocaleString()} payout
+                  </div>
                 </div>
               </div>
             </div>
@@ -200,36 +260,40 @@ export default function InvestmentsPage() {
 
           {/* TX Hash */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5 sm:mb-2">Transaction Hash</label>
+            <label className="mb-1.5 block text-xs font-medium text-foreground sm:mb-2 sm:text-sm">
+              Transaction Hash
+            </label>
             <input
               type="text"
               value={txHash}
               onChange={(e) => setTxHash(e.target.value)}
               placeholder="Paste TX hash after sending"
-              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-border rounded-lg text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[oklch(0.21_0_0)] font-mono"
+              className="w-full rounded-lg border border-border px-3 py-2.5 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-[oklch(0.21_0_0)] focus:outline-none sm:px-4 sm:py-3 sm:text-sm"
             />
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-foreground mb-1.5 sm:mb-2">Notes (optional)</label>
+            <label className="mb-1.5 block text-xs font-medium text-foreground sm:mb-2 sm:text-sm">
+              Notes (optional)
+            </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Message for admin..."
               rows={2}
-              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-border rounded-lg text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[oklch(0.21_0_0)] resize-none"
+              className="w-full resize-none rounded-lg border border-border px-3 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-[oklch(0.21_0_0)] focus:outline-none sm:px-4 sm:py-3 sm:text-sm"
             />
           </div>
 
           {/* Submit */}
           {submitSuccess && (
-            <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-emerald-500 text-sm text-center mb-3">
+            <div className="mb-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-center text-sm text-emerald-500">
               Investment submitted successfully! Awaiting admin approval.
             </div>
           )}
           {submitError && (
-            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400 text-sm text-center mb-3">
+            <div className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-center text-sm text-red-400">
               {submitError}
             </div>
           )}
@@ -237,29 +301,43 @@ export default function InvestmentsPage() {
             type="button"
             onClick={() => setShowConfirm(true)}
             disabled={!amount || !txHash || submitting}
-            className="w-full py-3 sm:py-4 bg-[oklch(0.55_0_150)] text-white rounded-lg text-sm sm:text-base font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-lg bg-[oklch(0.55_0_150)] py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:py-4 sm:text-base"
           >
-            {submitting ? 'Submitting...' : 'Submit Investment'}
+            {submitting ? "Submitting..." : "Submit Investment"}
           </button>
         </div>
       </Card>
 
       {/* How it works */}
       <Card className="p-4 sm:p-6">
-        <h3 className="text-sm sm:text-base font-medium text-foreground mb-3 sm:mb-4">How it works</h3>
+        <h3 className="mb-3 text-sm font-medium text-foreground sm:mb-4 sm:text-base">
+          How it works
+        </h3>
         <div className="space-y-3 sm:space-y-4">
           {[
             { step: "1", title: "Select Plan", desc: "24H or Weekly pool" },
-            { step: "2", title: "Send Crypto", desc: "Transfer USDT to wallet" },
-            { step: "3", title: "Get Confirmed", desc: "Admin verifies & updates balance" },
+            {
+              step: "2",
+              title: "Send Crypto",
+              desc: "Transfer USDT to wallet",
+            },
+            {
+              step: "3",
+              title: "Get Confirmed",
+              desc: "Admin verifies & updates balance",
+            },
           ].map((item) => (
             <div key={item.step} className="flex items-center gap-3">
-              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[oklch(0.21_0_0)] flex items-center justify-center text-[oklch(1_0_180)] font-medium text-[10px] sm:text-sm shrink-0">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[oklch(0.21_0_0)] text-[10px] font-medium text-[oklch(1_0_180)] sm:h-8 sm:w-8 sm:text-sm">
                 {item.step}
               </div>
               <div>
-                <div className="text-xs sm:text-sm font-medium text-foreground">{item.title}</div>
-                <div className="text-[10px] sm:text-xs text-muted-foreground">{item.desc}</div>
+                <div className="text-xs font-medium text-foreground sm:text-sm">
+                  {item.title}
+                </div>
+                <div className="text-[10px] text-muted-foreground sm:text-xs">
+                  {item.desc}
+                </div>
               </div>
             </div>
           ))}
@@ -268,37 +346,51 @@ export default function InvestmentsPage() {
 
       {/* Confirmation Modal */}
       {showConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowConfirm(false)}>
-          <div className="w-full max-w-sm bg-card border border-border rounded-lg p-5" onClick={e => e.stopPropagation()}>
-            <h3 className="text-base font-semibold text-foreground mb-4">Confirm Submission</h3>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={() => setShowConfirm(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-lg border border-border bg-card p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="mb-4 text-base font-semibold text-foreground">
+              Confirm Submission
+            </h3>
             <div className="space-y-3 text-xs sm:text-sm">
-              <div className="flex justify-between py-2 border-b border-border">
+              <div className="flex justify-between border-b border-border py-2">
                 <span className="text-muted-foreground">Plan</span>
-                <span className="text-foreground font-medium">{selectedPlan === 'weekly' ? 'Weekly Pool (8x)' : '24H Pool (6.4x)'}</span>
+                <span className="font-medium text-foreground">
+                  {selectedPlan === "weekly"
+                    ? "Weekly Pool (8x)"
+                    : "24H Pool (6.4x)"}
+                </span>
               </div>
-              <div className="flex justify-between py-2 border-b border-border">
+              <div className="flex justify-between border-b border-border py-2">
                 <span className="text-muted-foreground">Amount</span>
-                <span className="text-foreground font-medium">${amount}</span>
+                <span className="font-medium text-foreground">${amount}</span>
               </div>
-              <div className="flex justify-between py-2 border-b border-border">
+              <div className="flex justify-between border-b border-border py-2">
                 <span className="text-muted-foreground">Expected Return</span>
-                <span className="text-[oklch(0.55_0_150)] font-bold">${calculatedReturn.toLocaleString()}</span>
+                <span className="font-bold text-[oklch(0.55_0_150)]">
+                  ${calculatedReturn.toLocaleString()}
+                </span>
               </div>
             </div>
-            <div className="flex gap-2 mt-5">
+            <div className="mt-5 flex gap-2">
               <button
                 onClick={() => setShowConfirm(false)}
                 disabled={submitting}
-                className="flex-1 py-2.5 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
+                className="flex-1 rounded-lg border border-border py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-secondary disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="flex-1 py-2.5 bg-[oklch(0.55_0_150)] text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                className="flex-1 rounded-lg bg-[oklch(0.55_0_150)] py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                {submitting ? 'Submitting...' : 'Confirm & Submit'}
+                {submitting ? "Submitting..." : "Confirm & Submit"}
               </button>
             </div>
           </div>
