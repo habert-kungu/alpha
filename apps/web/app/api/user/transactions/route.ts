@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { verifyToken } from '@/lib/auth'
 import prisma from '@/lib/db'
+
+const ZERO = new Prisma.Decimal(0)
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,30 +13,32 @@ export async function GET(request: NextRequest) {
     }
 
     const payload = await verifyToken(token)
-    if (!payload) {
+    if (!payload?.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const userId = payload.userId
-
     const transactions = await prisma.transaction.findMany({
-      where: { userId },
+      where: { userId: payload.userId as string },
       orderBy: { createdAt: 'desc' },
       take: 100,
     })
 
-    const formatted = transactions.map(t => ({
-      id: t.id,
-      type: t.type,
-      amount: t.amount,
-      net: t.netAmount || t.amount,
-      fee: t.fee || (t.type !== 'return' ? t.amount - (t.netAmount || t.amount) : 0),
-      currency: t.currency,
-      status: t.status,
-      note: t.note || getNoteForType(t.type, t.amount),
-      txHash: t.txHash,
-      createdAt: t.createdAt.toISOString(),
-    }))
+    const formatted = transactions.map((t) => {
+      const net = t.netAmount ?? t.amount
+      const fee = t.fee ?? (t.type !== 'return' ? t.amount.sub(net) : ZERO)
+      return {
+        id: t.id,
+        type: t.type,
+        amount: t.amount.toFixed(2),
+        net: net.toFixed(2),
+        fee: fee.toFixed(2),
+        currency: t.currency,
+        status: t.status,
+        note: t.note || getNoteForType(t.type),
+        txHash: t.txHash,
+        createdAt: t.createdAt.toISOString(),
+      }
+    })
 
     return NextResponse.json({ transactions: formatted })
   } catch (error) {
@@ -42,7 +47,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function getNoteForType(type: string, amount: number): string {
+function getNoteForType(type: string): string {
   switch (type) {
     case 'deposit':
       return 'TRC20 Network - Confirmed'

@@ -1,10 +1,9 @@
 import { SignJWT, jwtVerify } from "jose"
 import bcrypt from "bcryptjs"
 import prisma from "./db"
+import { env } from "./env"
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "next-level-secret-key-change-in-production"
-)
+const JWT_SECRET = new TextEncoder().encode(env.JWT_SECRET)
 
 export interface JWTPayload {
   userId: string

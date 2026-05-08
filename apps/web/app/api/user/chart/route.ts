@@ -77,7 +77,11 @@ export async function GET(request: NextRequest) {
     }
 
     const chartData = activeCycles.map((cycle) => {
-      const data = generateMarketData(cycle.startValue, cycle.targetValue, 48)
+      const data = generateMarketData(
+        cycle.startValue.toNumber(),
+        cycle.targetValue.toNumber(),
+        48,
+      )
       return {
         cycleId: cycle.id,
         pool:

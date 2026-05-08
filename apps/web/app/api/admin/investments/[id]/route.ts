@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { verifyToken } from '@/lib/auth'
 import prisma from '@/lib/db'
-import { triggerNotification, CHANNELS, EVENTS } from '@/lib/pusher'
+import { createNotification } from '@/lib/notifications/create'
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -11,103 +12,122 @@ export async function PATCH(request: NextRequest) {
     }
 
     const payload = await verifyToken(token)
-    if (!payload || payload.role !== 'admin') {
+    if (!payload?.userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Re-verify admin role from DB (don't trust the JWT alone — handles demoted admins).
+    const adminUser = await prisma.user.findUnique({
+      where: { id: payload.userId as string },
+      select: { role: true },
+    })
+    if (adminUser?.role !== 'admin') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const body = await request.json()
     const { investmentId, action } = body
 
-    if (!investmentId || !action) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    if (!investmentId || typeof investmentId !== 'string') {
+      return NextResponse.json({ error: 'Missing investmentId' }, { status: 400 })
     }
-
     if (!['approve', 'reject'].includes(action)) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
 
-    const investment = await prisma.investment.findUnique({
-      where: { id: investmentId },
-    })
+    const result = await prisma.$transaction(async (tx) => {
+      const investment = await tx.investment.findUnique({ where: { id: investmentId } })
+      if (!investment) return { error: 'Investment not found' as const, status: 404 }
+      if (investment.status !== 'pending') {
+        return { error: 'Investment already processed' as const, status: 400 }
+      }
 
-    if (!investment) {
-      return NextResponse.json({ error: 'Investment not found' }, { status: 404 })
-    }
+      const newStatus = action === 'approve' ? 'active' : 'rejected'
+      const updated = await tx.investment.update({
+        where: { id: investmentId },
+        data: { status: newStatus },
+      })
 
-    if (investment.status !== 'pending') {
-      return NextResponse.json({ error: 'Investment already processed' }, { status: 400 })
-    }
+      const poolLabel = updated.pool === 'daily' ? '24H' : 'Weekly'
+      const amountStr = updated.amount.toFixed(2)
 
-    const newStatus = action === 'approve' ? 'active' : 'rejected'
-    
-    const updated = await prisma.investment.update({
-      where: { id: investmentId },
-      data: { status: newStatus },
-    })
+      if (action === 'approve') {
+        const targetValue = updated.amount.mul(updated.roi)
 
-    if (action === 'approve' && updated.status === 'active') {
-      const targetValue = updated.amount * updated.roi
-      
-      const cycle = await prisma.cycle.create({
-        data: {
-          investmentId: updated.id,
+        const cycle = await tx.cycle.create({
+          data: {
+            investmentId: updated.id,
+            userId: updated.userId,
+            startValue: updated.amount,
+            currentValue: updated.amount,
+            targetValue,
+            progress: new Prisma.Decimal(0),
+            status: 'active',
+          },
+        })
+
+        await tx.transaction.create({
+          data: {
+            userId: updated.userId,
+            type: 'investment',
+            amount: updated.amount,
+            netAmount: updated.amount,
+            currency: 'USDT',
+            status: 'completed',
+            note: `${poolLabel} Pool investment activated`,
+          },
+        })
+
+        await createNotification(tx, {
           userId: updated.userId,
-          startValue: updated.amount,
-          currentValue: updated.amount,
-          targetValue,
-          progress: 0,
-          status: 'active',
-        },
-      })
+          type: 'INVESTMENT_APPROVED',
+          title: 'Investment Approved',
+          message: `Your ${poolLabel} Pool investment of $${amountStr} has been approved.`,
+          data: {
+            investmentId: updated.id,
+            cycleId: cycle.id,
+            amount: amountStr,
+            pool: updated.pool,
+            targetValue: targetValue.toFixed(2),
+          },
+        })
+      } else {
+        await tx.transaction.create({
+          data: {
+            userId: updated.userId,
+            type: 'investment',
+            amount: updated.amount,
+            netAmount: updated.amount,
+            currency: 'USDT',
+            status: 'rejected',
+            note: 'Investment rejected',
+          },
+        })
 
-      await prisma.transaction.create({
-        data: {
+        await createNotification(tx, {
           userId: updated.userId,
-          type: 'investment',
-          amount: updated.amount,
-          netAmount: updated.amount,
-          currency: 'USDT',
-          status: 'completed',
-          note: `${updated.pool === 'daily' ? '24H' : 'Weekly'} Pool investment activated`,
-        },
-      })
+          type: 'INVESTMENT_REJECTED',
+          title: 'Investment Rejected',
+          message: `Your investment of $${amountStr} was not approved. Please contact support.`,
+          data: {
+            investmentId: updated.id,
+            amount: amountStr,
+            pool: updated.pool,
+          },
+        })
+      }
 
-      triggerNotification(CHANNELS.USER(updated.userId), EVENTS.INVESTMENT_APPROVED, {
-        investmentId: updated.id,
-        amount: updated.amount,
-        pool: updated.pool,
-        targetValue,
-        cycleId: cycle.id,
-        message: `Your ${updated.pool === 'daily' ? '24H' : 'Weekly'} Pool investment of $${updated.amount} has been approved!`,
-      })
-    } else if (action === 'reject') {
-      await prisma.transaction.create({
-        data: {
-          userId: updated.userId,
-          type: 'investment',
-          amount: updated.amount,
-          netAmount: updated.amount,
-          currency: 'USDT',
-          status: 'rejected',
-          note: `Investment rejected`,
-        },
-      })
-
-      triggerNotification(CHANNELS.USER(updated.userId), EVENTS.INVESTMENT_REJECTED, {
-        investmentId: updated.id,
-        amount: updated.amount,
-        pool: updated.pool,
-        message: `Your investment of $${updated.amount} was not approved. Please contact support.`,
-      })
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      investment: {
-        id: updated.id,
-        status: updated.status,
+      return {
+        ok: true as const,
+        investment: { id: updated.id, status: updated.status },
       }
     })
+
+    if ('error' in result) {
+      return NextResponse.json({ error: result.error }, { status: result.status })
+    }
+
+    return NextResponse.json({ success: true, investment: result.investment })
   } catch (error) {
     console.error('Error updating investment:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

@@ -1,9 +1,19 @@
 "use client"
 
 import * as React from "react"
-import Pusher from "pusher-js"
 
-interface Notification {
+interface ServerNotification {
+  id: string
+  userId: string
+  type: string
+  title: string
+  message: string
+  data: unknown
+  readAt: string | null
+  createdAt: string
+}
+
+export interface Notification {
   id: string
   type: string
   title: string
@@ -17,111 +27,117 @@ interface NotificationContextType {
   unreadCount: number
   markAsRead: (id: string) => void
   markAllAsRead: () => void
-  addNotification: (notification: Notification) => void
 }
 
 const NotificationContext = React.createContext<NotificationContextType | undefined>(undefined)
 
-export function NotificationProvider({ children, userId, isAdmin }: { children: React.ReactNode; userId?: string; isAdmin?: boolean }) {
+function uiTypeFor(serverType: string): string {
+  switch (serverType) {
+    case "INVESTMENT_APPROVED":
+    case "CYCLE_COMPLETED":
+    case "WITHDRAWAL_PROCESSED":
+      return "success"
+    case "INVESTMENT_REJECTED":
+      return "error"
+    case "INVESTMENT_CREATED":
+      return "investment"
+    default:
+      return "info"
+  }
+}
+
+function toUi(n: ServerNotification): Notification {
+  return {
+    id: n.id,
+    type: uiTypeFor(n.type),
+    title: n.title,
+    message: n.message,
+    timestamp: new Date(n.createdAt),
+    read: n.readAt !== null,
+  }
+}
+
+export function NotificationProvider({
+  children,
+  userId,
+}: {
+  children: React.ReactNode
+  userId?: string
+  isAdmin?: boolean
+}) {
   const [notifications, setNotifications] = React.useState<Notification[]>([])
-  const [isConnected, setIsConnected] = React.useState(false)
+  const [unreadCount, setUnreadCount] = React.useState(0)
 
-  const unreadCount = notifications.filter(n => !n.read).length
-
-  const addNotification = React.useCallback((notification: Notification) => {
-    setNotifications(prev => [notification, ...prev].slice(0, 50))
+  const refresh = React.useCallback(async () => {
+    try {
+      const res = await fetch("/api/notifications?limit=50", { cache: "no-store" })
+      if (!res.ok) return
+      const json = (await res.json()) as {
+        notifications: ServerNotification[]
+        unreadCount: number
+      }
+      setNotifications(json.notifications.map(toUi))
+      setUnreadCount(json.unreadCount)
+    } catch (err) {
+      console.error("notification fetch failed", err)
+    }
   }, [])
 
-  const markAsRead = React.useCallback((id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
-  }, [])
+  const markAsRead = React.useCallback(
+    async (id: string) => {
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+      )
+      setUnreadCount((c) => Math.max(0, c - 1))
+      try {
+        await fetch("/api/notifications", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id }),
+        })
+      } catch (err) {
+        console.error("markAsRead failed", err)
+        refresh()
+      }
+    },
+    [refresh],
+  )
 
-  const markAllAsRead = React.useCallback(() => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
-  }, [])
+  const markAllAsRead = React.useCallback(async () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+    setUnreadCount(0)
+    try {
+      await fetch("/api/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ all: true }),
+      })
+    } catch (err) {
+      console.error("markAllAsRead failed", err)
+      refresh()
+    }
+  }, [refresh])
 
   React.useEffect(() => {
-    if (!userId && !isAdmin) return
+    if (!userId) return
+    refresh()
 
-    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY || "your-key", {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || "us2",
+    const es = new EventSource("/api/notifications/stream")
+    es.addEventListener("new", () => {
+      refresh()
     })
-
-    const channels: string[] = []
-    if (userId) channels.push(`user-${userId}`)
-    if (isAdmin) channels.push("admin-notifications")
-
-    const subscribedChannels = channels.map(channelName => {
-      const channel = pusher.subscribe(channelName)
-      
-      channel.bind("investment:created", (data: any) => {
-        addNotification({
-          id: `inv-created-${Date.now()}`,
-          type: "investment",
-          title: "New Investment",
-          message: data.message || `New ${data.pool} investment of $${data.amount}`,
-          timestamp: new Date(),
-          read: false,
-        })
-      })
-
-      channel.bind("investment:approved", (data: any) => {
-        addNotification({
-          id: `inv-approved-${Date.now()}`,
-          type: "success",
-          title: "Investment Approved",
-          message: data.message,
-          timestamp: new Date(),
-          read: false,
-        })
-      })
-
-      channel.bind("investment:rejected", (data: any) => {
-        addNotification({
-          id: `inv-rejected-${Date.now()}`,
-          type: "error",
-          title: "Investment Rejected",
-          message: data.message,
-          timestamp: new Date(),
-          read: false,
-        })
-      })
-
-      channel.bind("cycle:completed", (data: any) => {
-        addNotification({
-          id: `cycle-completed-${Date.now()}`,
-          type: "success",
-          title: "Cycle Completed",
-          message: `Your ${data.pool} cycle completed! $${data.returnAmount} is now available.`,
-          timestamp: new Date(),
-          read: false,
-        })
-      })
-
-      channel.bind("withdrawal:processed", (data: any) => {
-        addNotification({
-          id: `withdrawal-${Date.now()}`,
-          type: "success",
-          title: "Withdrawal Processed",
-          message: `Your withdrawal of $${data.amount} has been processed.`,
-          timestamp: new Date(),
-          read: false,
-        })
-      })
-
-      return channel
-    })
-
-    setIsConnected(true)
-
-    return () => {
-      subscribedChannels.forEach(ch => ch.unbind_all().unsubscribe())
-      pusher.disconnect()
+    es.onerror = () => {
+      // EventSource auto-reconnects; nothing to do.
     }
-  }, [userId, isAdmin, addNotification])
+    return () => {
+      es.close()
+    }
+  }, [userId, refresh])
 
   return (
-    <NotificationContext.Provider value={{ notifications, unreadCount, markAsRead, markAllAsRead, addNotification }}>
+    <NotificationContext.Provider
+      value={{ notifications, unreadCount, markAsRead, markAllAsRead }}
+    >
       {children}
     </NotificationContext.Provider>
   )
