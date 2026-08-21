@@ -77,7 +77,7 @@ const steps = [
 
 function Navbar() {
   return (
-    <header className="fixed top-0 right-0 left-0 z-50 border-b border-[oklch(0.922_0_0)] bg-[oklch(1_0_180)]/90 backdrop-blur-md">
+    <header className="fixed top-0 right-0 left-0 z-50 border-b border-border bg-card/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
         <Link href="/" className="flex items-center gap-2">
           <svg
@@ -90,37 +90,37 @@ function Navbar() {
               fillRule="evenodd"
               clipRule="evenodd"
               d="M18.4201 9.7905C19.2053 10.2438 19.4743 11.2477 19.021 12.0329L10.8134 26.2488C10.3601 27.034 9.35616 27.3029 8.57104 26.8497C7.78592 26.3964 7.51689 25.3924 7.9702 24.6073L16.1778 10.3913C16.6311 9.60622 17.635 9.33722 18.4201 9.7905ZM27.7561 13.3169C28.5412 13.7702 28.8102 14.7741 28.3569 15.5592L18.5078 32.6184C18.0545 33.4035 17.0506 33.6725 16.2655 33.2192C15.4803 32.7659 15.2113 31.762 15.6646 30.9769L25.5137 13.9177C25.967 13.1326 26.9709 12.8636 27.7561 13.3169ZM36.7357 20.7424C37.2646 19.8265 37.0569 18.7165 36.2717 18.2632C35.4866 17.8099 34.4214 18.185 33.8926 19.1009L24.317 35.6862C23.7882 36.6022 23.9959 37.7122 24.7811 38.1655C25.5662 38.6188 26.6314 38.2437 27.1602 37.3277L36.7357 20.7424Z"
-              fill="oklch(0.145 0 0)"
+              fill="var(--foreground)"
             />
             <path
               opacity="0.4"
               fillRule="evenodd"
               clipRule="evenodd"
               d="M26.5658 8.82095C27.0191 8.03583 26.7501 7.03188 25.965 6.57859C25.1799 6.1253 24.1759 6.39431 23.7227 7.17943L8.949 32.7682C8.49569 33.5533 8.76471 34.5572 9.54983 35.0105C10.335 35.4638 11.3389 35.1948 11.7922 34.4097L26.5658 8.82095ZM30.3507 21.9609C30.8398 21.1139 30.5998 20.0597 29.8146 19.6064C29.0295 19.1531 27.9966 19.4723 27.5075 20.3194L22.1946 29.5216C21.7056 30.3686 21.9456 31.4227 22.7308 31.876C23.5159 32.3293 24.5488 32.0102 25.0378 31.1631L30.3507 21.9609ZM36.4308 27.8462C37.216 28.2995 37.485 29.3034 37.0317 30.0885L35.3901 32.9317C34.9368 33.7169 33.9329 33.9859 33.1478 33.5326C32.3626 33.0792 32.0936 32.0753 32.547 31.2902L34.1885 28.447C34.6418 27.6619 35.6457 27.3929 36.4308 27.8462ZM11.5007 15.2144C11.9641 14.4118 11.7032 13.3937 10.9181 12.9404C10.133 12.4871 9.1209 12.7703 8.65749 13.5729L6.9794 16.4794C6.516 17.2821 6.77684 18.3002 7.56196 18.7535C8.34708 19.2068 9.35919 18.9236 9.8226 18.121L11.5007 15.2144Z"
-              fill="oklch(0.145 0 0)"
+              fill="var(--foreground)"
             />
           </svg>
           <span className="text-lg font-semibold tracking-tight text-primary">
-            Next Level
+            AlphaReserve
           </span>
         </Link>
 
         <nav className="hidden items-center gap-6 md:flex">
           <a
             href="#plans"
-            className="text-sm text-[oklch(0.556_0_0)] transition-colors hover:text-[oklch(0.145_0_0)]"
+            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             Plans
           </a>
           <a
             href="#services"
-            className="text-sm text-[oklch(0.556_0_0)] transition-colors hover:text-[oklch(0.145_0_0)]"
+            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             Services
           </a>
           <a
             href="#how-it-works"
-            className="text-sm text-[oklch(0.556_0_0)] transition-colors hover:text-[oklch(0.145_0_0)]"
+            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             How it Works
           </a>
@@ -128,23 +128,23 @@ function Navbar() {
 
         <div className="flex items-center gap-3">
           <a
-            href="https://t.me/nextleveltradersw"
+            href="https://t.me/+ujxfTTqxAoE4ODNh"
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden items-center gap-2 rounded-md border border-[oklch(0.88_0_0)] px-3 py-1.5 text-sm text-[oklch(0.556_0_0)] transition-colors hover:border-[oklch(0.21_0_0)] hover:text-[oklch(0.145_0_0)] sm:flex"
+            className="hidden items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-foreground hover:text-foreground sm:flex"
           >
             <RiTelegramLine className="h-4 w-4" />
             Telegram
           </a>
           <Link
             href="/login"
-            className="px-3 py-1.5 text-sm font-medium text-[oklch(0.556_0_0)] hover:text-[oklch(0.145_0_0)]"
+            className="px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
           >
             Log in
           </Link>
           <Link
             href="/signup"
-            className="rounded-md bg-[oklch(0.21_0_0)] px-4 py-1.5 text-sm font-medium text-[oklch(1_0_180)] transition-opacity hover:opacity-90"
+            className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
           >
             Get Started
           </Link>
@@ -225,7 +225,7 @@ function Hero() {
               </h1>
 
               <p className="hero-text mx-auto mb-8 max-w-lg text-lg leading-relaxed text-white/80 lg:mx-0">
-                Join Next Level's proven trading pool. Choose your plan and
+                Join AlphaReserve's proven trading pool. Choose your plan and
                 receive guaranteed fixed returns on your deposit.
               </p>
 
@@ -238,7 +238,7 @@ function Hero() {
                   <RiArrowRightLine className="h-4 w-4" />
                 </Link>
                 <a
-                  href="https://t.me/nextleveltradersw"
+                  href="https://t.me/+ujxfTTqxAoE4ODNh"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-lg bg-accent px-6 py-3 text-sm font-medium text-accent-foreground transition-all hover:opacity-90"
@@ -287,12 +287,12 @@ function PriceTicker() {
             </span>
             <span className="text-sm text-white/80">${price.price}</span>
             <span
-              className={`text-xs font-semibold ${price.positive ? "text-green-400" : "text-red-400"}`}
+              className={`text-xs font-semibold ${price.positive ? "text-[var(--color-success)]" : "text-red-400"}`}
             >
               {price.change}
             </span>
             <span
-              className={`ml-1 h-1.5 w-1.5 rounded-full ${price.positive ? "bg-green-400" : "bg-red-400"}`}
+              className={`ml-1 h-1.5 w-1.5 rounded-full ${price.positive ? "bg-[var(--color-success)]" : "bg-red-400"}`}
             />
           </div>
         ))}
@@ -438,11 +438,11 @@ function PoolStats() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-gray-200 bg-gray-200 md:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-border bg-secondary md:grid-cols-3 lg:grid-cols-6">
           {stats.map((stat, i) => (
             <div
               key={i}
-              className={`relative border border-white/10 bg-white/80 p-4 backdrop-blur-xl transition-all hover:bg-white/90 ${stat.hero ? "col-span-2 lg:col-span-2" : ""}`}
+              className={`relative border border-white/10 bg-card/80 p-4 backdrop-blur-xl transition-all hover:bg-card/90 ${stat.hero ? "col-span-2 lg:col-span-2" : ""}`}
             >
               <div className="absolute top-2 right-2">
                 <span className="font-mono text-[9px] text-muted-foreground uppercase">
@@ -464,7 +464,7 @@ function PoolStats() {
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="rounded-full bg-green-100 px-2 py-0.5 font-mono text-[10px] font-bold text-green-700">
+                <span className="rounded-full bg-[var(--bg-success)] px-2 py-0.5 font-mono text-[10px] font-bold text-[var(--color-success)]">
                   {stat.change}
                 </span>
                 <Sparkline
@@ -564,13 +564,13 @@ function LiveTelegram() {
       className={`fixed right-6 bottom-6 z-50 transition-all duration-500 ${isVisible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-20 opacity-0"}`}
     >
       <a
-        href="https://t.me/nextleveltradersw"
+        href="https://t.me/+ujxfTTqxAoE4ODNh"
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center gap-4 rounded-full bg-primary px-5 py-3 text-white shadow-2xl transition-all hover:scale-105 hover:shadow-xl"
       >
         <div className="flex items-center gap-2">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
+          <span className="h-2 w-2 animate-pulse rounded-full bg-[var(--color-success)]" />
           <span className="text-sm font-medium">
             2,413 traders in the live pool
           </span>
@@ -646,7 +646,7 @@ function PlanCard({
   return (
     <div ref={cardRef} className="relative">
       <div
-        className={`relative rounded-3xl bg-white p-6 transition-all duration-200 md:p-8 ${popular ? "shadow-lg ring-2 ring-[oklch(0.21_0_0)/0.2]" : "shadow-md hover:shadow-lg"}`}
+        className={`relative rounded-3xl bg-card p-6 transition-all duration-200 md:p-8 ${popular ? "shadow-lg ring-2 ring-primary/20" : "shadow-md hover:shadow-lg"}`}
       >
         {popular && (
           <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 md:-top-4">
@@ -699,7 +699,7 @@ function PlanCard({
             </div>
           </div>
           <div
-            className={`self-start rounded-full px-3 py-1.5 sm:self-auto md:px-5 md:py-2.5 ${popular ? "bg-[oklch(0.21_0_0)] text-[oklch(1_0_180)]" : "bg-[oklch(0.97_0_180)] text-[oklch(0.145_0_0)]"}`}
+            className={`self-start rounded-full px-3 py-1.5 sm:self-auto md:px-5 md:py-2.5 ${popular ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground"}`}
           >
             <span className="text-base font-bold whitespace-nowrap md:text-lg">
               {roi}
@@ -708,7 +708,7 @@ function PlanCard({
         </div>
 
         <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
-          <div className="min-w-[280px] rounded-xl bg-gray-50 p-4 md:min-w-0">
+          <div className="min-w-[280px] rounded-xl bg-muted p-4 md:min-w-0">
             <div className="mb-2 grid grid-cols-3 pb-2 text-xs tracking-wider text-muted-foreground uppercase">
               <span>Deposit</span>
               <span>Return</span>
@@ -717,13 +717,13 @@ function PlanCard({
             {plans.map((tier, i) => (
               <div
                 key={i}
-                className="grid cursor-pointer grid-cols-3 rounded-lg py-2 text-sm transition-colors hover:bg-white"
+                className="grid cursor-pointer grid-cols-3 rounded-lg py-2 text-sm transition-colors hover:bg-card"
               >
                 <span className="text-muted-foreground">${tier.deposit}</span>
                 <span className="font-semibold text-primary">
                   ${tier.return}
                 </span>
-                <span className="font-medium text-green-600">
+                <span className="font-medium text-[var(--color-success)]">
                   +${tier.profit}
                 </span>
               </div>
@@ -733,7 +733,7 @@ function PlanCard({
 
         <Link
           href="/signup"
-          className={`block w-full rounded-xl py-4 text-center text-sm font-semibold transition-all duration-300 hover:scale-[1.02] ${popular ? "bg-[oklch(0.21_0_0)] text-[oklch(1_0_180)] hover:opacity-90" : "bg-[oklch(0.145_0_0)] text-[oklch(1_0_180)] hover:opacity-90"}`}
+          className={`block w-full rounded-xl py-4 text-center text-sm font-semibold transition-all duration-300 hover:scale-[1.02] ${popular ? "bg-primary text-primary-foreground hover:opacity-90" : "bg-foreground text-background hover:opacity-90"}`}
         >
           {cta}
         </Link>
@@ -783,9 +783,9 @@ function InvestmentPlans() {
       />
 
       <div className="relative z-10 mx-auto max-w-5xl px-8">
-        <div className="mb-16 text-center">
+        <div className="reveal mb-16 text-center">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/5 px-4 py-2 text-sm font-medium text-primary">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-500" />
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--color-success)]" />
             Investment Plans
           </div>
           <h2 className="mb-4 text-4xl font-bold text-primary md:text-5xl">
@@ -829,7 +829,7 @@ function Services() {
   const services = [
     {
       badge: "High Demand",
-      badgeColor: "bg-orange-100 text-orange-700",
+      badgeColor: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
       title: "ONE-ON-ONE LIVE TRADING SESSION",
       desc: "Trade live alongside our senior analyst in a private session tailored to your portfolio and goals. Watch real trades unfold in real time and ask anything.",
       features: [
@@ -846,7 +846,7 @@ function Services() {
     },
     {
       badge: "Most Popular",
-      badgeColor: "bg-[oklch(0.97_0_180)] text-[oklch(0.21_0_0)]",
+      badgeColor: "bg-secondary text-foreground",
       title: "CRYPTO MENTORSHIP PROGRAM",
       desc: "A structured mentorship program to take you from beginner to confident crypto trader. Get a personal roadmap, weekly check-ins, and hands-on guidance.",
       features: [
@@ -863,7 +863,7 @@ function Services() {
     },
     {
       badge: "Monthly Sub",
-      badgeColor: "bg-blue-100 text-blue-700",
+      badgeColor: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
       title: "VIP CRYPTO SIGNALS MEMBERSHIP",
       desc: "Get high-probability trade signals delivered directly to your Telegram - with precise entry, take-profit, and stop-loss levels. No guesswork, just actionable calls.",
       features: [
@@ -905,9 +905,9 @@ function Services() {
   }, [])
 
   return (
-    <section id="services" ref={sectionRef} className="bg-white py-32">
+    <section id="services" ref={sectionRef} className="bg-card py-32">
       <div className="mx-auto max-w-6xl px-8">
-        <div className="mb-16 text-center">
+        <div className="reveal mb-16 text-center">
           <h2 className="mb-4 text-4xl font-bold text-primary md:text-5xl">
             Premium Offerings
           </h2>
@@ -924,7 +924,7 @@ function Services() {
               ref={(el) => {
                 cardsRef.current[i] = el
               }}
-              className={`service-card relative flex flex-col rounded-2xl bg-white p-6 transition-all duration-300 hover:shadow-lg md:p-8 ${service.popular ? "ring-2 ring-[oklch(0.21_0_0)/0.2]" : ""}`}
+              className={`service-card relative flex flex-col rounded-2xl bg-card p-6 transition-all duration-300 hover:shadow-lg md:p-8 ${service.popular ? "ring-2 ring-primary/20" : ""}`}
             >
               <div className="absolute -top-3 left-1/2 z-10 -translate-x-1/2">
                 <span
@@ -947,7 +947,7 @@ function Services() {
                     key={j}
                     className="flex items-start gap-2 text-xs text-muted-foreground"
                   >
-                    <span className="mt-0.5 text-green-500">✓</span>
+                    <span className="mt-0.5 text-[var(--color-success)]">✓</span>
                     {feature}
                   </div>
                 ))}
@@ -963,15 +963,15 @@ function Services() {
               </div>
 
               <a
-                href="https://t.me/nextleveltradersw"
-                className={`mt-auto block w-full rounded-xl py-3 text-center text-sm font-semibold transition-all duration-300 hover:scale-[1.02] ${service.popular ? "bg-[oklch(0.21_0_0)] text-[oklch(1_0_180)] hover:opacity-90" : "bg-[oklch(0.145_0_0)] text-[oklch(1_0_180)] hover:opacity-90"}`}
+                href="https://t.me/+ujxfTTqxAoE4ODNh"
+                className={`mt-auto block w-full rounded-xl py-3 text-center text-sm font-semibold transition-all duration-300 hover:scale-[1.02] ${service.popular ? "bg-primary text-primary-foreground hover:opacity-90" : "bg-foreground text-background hover:opacity-90"}`}
               >
                 {service.cta}
               </a>
 
               {service.ctaLink && (
                 <a
-                  href="https://t.me/nextleveltradersw"
+                  href="https://t.me/+ujxfTTqxAoE4ODNh"
                   className="mt-3 block text-center text-xs text-muted-foreground hover:text-primary"
                 >
                   {service.ctaLink}
@@ -1041,8 +1041,8 @@ function HowItWorks() {
       className="bg-canvas py-10 sm:py-14"
     >
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
-        <div className="mb-8 text-center sm:mb-12">
-          <div className="mb-3 inline-block rounded-full bg-gray-100 px-2.5 py-1 font-mono text-[9px] tracking-widest text-primary uppercase sm:mb-4 sm:px-3 sm:py-1.5 sm:text-[10px]">
+        <div className="reveal mb-8 text-center sm:mb-12">
+          <div className="mb-3 inline-block rounded-full bg-muted px-2.5 py-1 font-mono text-[9px] tracking-widest text-primary uppercase sm:mb-4 sm:px-3 sm:py-1.5 sm:text-[10px]">
             How It Works
           </div>
           <h2 className="mb-2 text-2xl font-bold text-primary sm:text-3xl md:text-4xl">
@@ -1055,8 +1055,8 @@ function HowItWorks() {
 
         {/* Mobile: Vertical timeline on left */}
         <div className="relative pl-8 sm:pl-10 md:hidden">
-          <div className="tl-line absolute top-0 bottom-0 left-3 w-0.5 overflow-hidden rounded-full bg-gray-200 sm:left-4">
-            <div className="tl-fill absolute top-0 left-0 h-0 w-full bg-gradient-to-b from-[oklch(0.5_0_0)] to-[oklch(0.55_0_150)]" />
+          <div className="tl-line absolute top-0 bottom-0 left-3 w-0.5 overflow-hidden rounded-full bg-secondary sm:left-4">
+            <div className="tl-fill absolute top-0 left-0 h-0 w-full bg-gradient-to-b from-[oklch(0.5_0_0)] to-[oklch(0.62_0.12_178)]" />
           </div>
 
           <div className="space-y-6 sm:space-y-8">
@@ -1065,7 +1065,7 @@ function HowItWorks() {
                 key={i}
                 className="step-row relative flex translate-x-4 items-start gap-3 opacity-0 transition-all duration-500 sm:gap-4"
               >
-                <div className="absolute -left-6 z-10 flex h-6 w-6 -translate-x-1/2 items-center justify-center rounded-full border-2 border-gray-200 bg-white sm:-left-7 sm:h-8 sm:w-8">
+                <div className="absolute -left-6 z-10 flex h-6 w-6 -translate-x-1/2 items-center justify-center rounded-full border-2 border-border bg-card sm:-left-7 sm:h-8 sm:w-8">
                   <span className="text-[9px] font-bold text-primary sm:text-[10px]">
                     {step.number}
                   </span>
@@ -1085,9 +1085,9 @@ function HowItWorks() {
 
         {/* Desktop: Alternating left/right */}
         <div className="relative hidden md:block" id="tl">
-          <div className="tl-line absolute top-0 bottom-0 left-1/2 w-px -translate-x-1/2 overflow-hidden bg-gray-200">
+          <div className="tl-line absolute top-0 bottom-0 left-1/2 w-px -translate-x-1/2 overflow-hidden bg-secondary">
             <div
-              className="tl-fill absolute top-0 left-0 h-0 w-full bg-gradient-to-b from-[oklch(0.5_0_0)] via-[oklch(0.3_0_0)] to-[oklch(0.55_0_150)]"
+              className="tl-fill absolute top-0 left-0 h-0 w-full bg-gradient-to-b from-[oklch(0.5_0_0)] via-[oklch(0.3_0_0)] to-[oklch(0.62_0.12_178)]"
               style={{ transition: "height 0.1s linear" }}
             />
           </div>
@@ -1107,8 +1107,8 @@ function HowItWorks() {
               </div>
             </div>
             <div className="flex w-10 flex-shrink-0 items-center justify-center">
-              <div className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white">
-                <div className="dot h-2 w-2 rounded-full bg-gray-300" />
+              <div className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card">
+                <div className="dot h-2 w-2 rounded-full bg-border" />
               </div>
             </div>
             <div className="flex-1 pl-8" />
@@ -1117,8 +1117,8 @@ function HowItWorks() {
           <div className="step-row right-content relative mb-12 flex items-center">
             <div className="flex-1 pr-8" />
             <div className="flex w-10 flex-shrink-0 items-center justify-center">
-              <div className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white">
-                <div className="dot h-2 w-2 rounded-full bg-gray-300" />
+              <div className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card">
+                <div className="dot h-2 w-2 rounded-full bg-border" />
               </div>
             </div>
             <div className="flex-1 pl-8 text-left">
@@ -1151,8 +1151,8 @@ function HowItWorks() {
               </div>
             </div>
             <div className="flex w-10 flex-shrink-0 items-center justify-center">
-              <div className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white">
-                <div className="dot h-2 w-2 rounded-full bg-gray-300" />
+              <div className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card">
+                <div className="dot h-2 w-2 rounded-full bg-border" />
               </div>
             </div>
             <div className="flex-1 pl-8" />
@@ -1161,8 +1161,8 @@ function HowItWorks() {
           <div className="step-row right-content relative flex items-center">
             <div className="flex-1 pr-8" />
             <div className="flex w-10 flex-shrink-0 items-center justify-center">
-              <div className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white">
-                <div className="dot h-2 w-2 rounded-full bg-gray-300" />
+              <div className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card">
+                <div className="dot h-2 w-2 rounded-full bg-border" />
               </div>
             </div>
             <div className="flex-1 pl-8 text-left">
@@ -1183,8 +1183,8 @@ function HowItWorks() {
 
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3 sm:mt-14 sm:gap-4">
           <a
-            href="https://t.me/nextleveltradersw"
-            className="rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-gray-800 sm:px-6 sm:py-3"
+            href="https://t.me/+ujxfTTqxAoE4ODNh"
+            className="rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white transition-colors hover:opacity-90 sm:px-6 sm:py-3"
           >
             Join Telegram
           </a>
@@ -1217,10 +1217,10 @@ function Community() {
         </p>
 
         <a
-          href="https://t.me/nextleveltradersw"
+          href="https://t.me/+ujxfTTqxAoE4ODNh"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 rounded-lg bg-white px-8 py-4 text-lg font-bold text-primary transition-colors hover:bg-white/90"
+          className="inline-flex items-center gap-2 rounded-lg bg-card px-8 py-4 text-lg font-bold text-primary transition-colors hover:bg-card/90"
         >
           <RiTelegramLine className="h-5 w-5" />
           Join Now
@@ -1236,10 +1236,10 @@ function Footer() {
       <div className="mx-auto max-w-6xl px-6">
         <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
           <span className="text-base font-semibold text-primary">
-            Next Level
+            AlphaReserve
           </span>
           <p className="text-sm text-muted">
-            © 2026 Next Level · All rights reserved
+            © 2026 AlphaReserve · All rights reserved
           </p>
         </div>
         <div className="mt-3 border-t border-border pt-3 text-center">
@@ -1251,6 +1251,31 @@ function Footer() {
 }
 
 export default function LandingPage() {
+  React.useEffect(() => {
+    const els = Array.from(document.querySelectorAll<HTMLElement>(".reveal"))
+    if (typeof IntersectionObserver === "undefined") return // stays visible
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("in")
+            io.unobserve(entry.target)
+          }
+        })
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
+    )
+    els.forEach((e) => {
+      const belowFold = e.getBoundingClientRect().top > window.innerHeight * 0.92
+      if (belowFold) {
+        // Only below-fold elements hide-then-reveal on scroll; above-fold stay put.
+        e.classList.add("reveal-armed")
+        io.observe(e)
+      }
+    })
+    return () => io.disconnect()
+  }, [])
+
   return (
     <>
       <Navbar />

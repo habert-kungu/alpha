@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     setUser(data.user)
-    router.push(data.user.role === "admin" ? "/admin" : "/dashboard")
+    router.push(data.user.role === "admin" ? "/app/admin" : "/app")
   }
 
   const signUp = async (data: { name: string; email: string; password: string; telegram?: string }) => {
@@ -75,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     setUser(response.user)
-    router.push("/dashboard")
+    router.push("/app")
   }
 
   const signOut = async () => {

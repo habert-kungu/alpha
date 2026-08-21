@@ -30,7 +30,7 @@ export function NotificationBell({ className = "" }: { className?: string }) {
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-[oklch(0.55_0_150)] text-white text-[10px] font-medium rounded-full flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-[oklch(0.62_0.12_178)] text-white text-[10px] font-medium rounded-full flex items-center justify-center">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -45,7 +45,7 @@ export function NotificationBell({ className = "" }: { className?: string }) {
               {unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
-                  className="text-[11px] text-[oklch(0.55_0_150)] hover:underline"
+                  className="text-[11px] text-[oklch(0.62_0.12_178)] hover:underline"
                 >
                   Mark all read
                 </button>
@@ -66,14 +66,14 @@ export function NotificationBell({ className = "" }: { className?: string }) {
                     key={notification.id}
                     onClick={() => markAsRead(notification.id)}
                     className={`px-4 py-3 border-b border-border/50 cursor-pointer hover:bg-secondary/50 transition-colors ${
-                      !notification.read ? "bg-[oklch(0.55_0_150)/5]" : ""
+                      !notification.read ? "bg-[oklch(0.62_0.12_178)/5]" : ""
                     }`}
                   >
                     <div className="flex items-start gap-3">
                       <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
                         notification.type === "success" ? "bg-emerald-500" :
                         notification.type === "error" ? "bg-red-500" :
-                        notification.type === "investment" ? "bg-[oklch(0.55_0_150)]" :
+                        notification.type === "investment" ? "bg-[oklch(0.62_0.12_178)]" :
                         "bg-muted-foreground"
                       }`} />
                       <div className="flex-1 min-w-0">
@@ -119,7 +119,7 @@ export function ToastNotification() {
             <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
               toast.type === "success" ? "bg-emerald-500" :
               toast.type === "error" ? "bg-red-500" :
-              "bg-[oklch(0.55_0_150)]"
+              "bg-[oklch(0.62_0.12_178)]"
             }`} />
             <div>
               <p className="text-sm font-medium text-foreground">{toast.title}</p>

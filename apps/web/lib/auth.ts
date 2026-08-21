@@ -2,9 +2,21 @@ import { SignJWT, jwtVerify } from "jose"
 import bcrypt from "bcryptjs"
 import prisma from "./db"
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "next-level-secret-key-change-in-production"
-)
+// Resolve the signing secret lazily so a missing value fails closed in
+// production (never silently falling back to a known, forgeable default).
+function getJwtSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET
+  if (secret && secret.length >= 16) {
+    return new TextEncoder().encode(secret)
+  }
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "JWT_SECRET is not set (or too short). Refusing to sign/verify tokens with an insecure default."
+    )
+  }
+  // Development-only fallback. Clearly not for production use.
+  return new TextEncoder().encode("dev-only-insecure-secret-do-not-use-in-prod")
+}
 
 export interface JWTPayload {
   userId: string
@@ -27,12 +39,12 @@ export async function createToken(payload: JWTPayload): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
-    .sign(JWT_SECRET)
+    .sign(getJwtSecret())
 }
 
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET)
+    const { payload } = await jwtVerify(token, getJwtSecret())
     return payload as JWTPayload
   } catch {
     return null

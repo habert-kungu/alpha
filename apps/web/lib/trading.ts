@@ -61,14 +61,16 @@ export interface WithdrawalCalculation {
 
 export function calculateTargetReturn(amount: number, pool: PoolType): number {
   const config = POOLS[pool]
+  if (!config || !Number.isFinite(amount) || amount <= 0) return 0
   return Math.round(amount * config.roiMultiplier)
 }
 
 export function calculateWithdrawal(amount: number): WithdrawalCalculation {
-  const taxAmount = Math.round(amount * WITHDRAWAL_TAX_RATE * 100) / 100
-  const netAmount = Math.round((amount - taxAmount) * 100) / 100
+  const safeAmount = Number.isFinite(amount) && amount > 0 ? amount : 0
+  const taxAmount = Math.round(safeAmount * WITHDRAWAL_TAX_RATE * 100) / 100
+  const netAmount = Math.round((safeAmount - taxAmount) * 100) / 100
   return {
-    grossAmount: Math.round(amount * 100) / 100,
+    grossAmount: Math.round(safeAmount * 100) / 100,
     taxAmount,
     netAmount,
   }
@@ -76,10 +78,11 @@ export function calculateWithdrawal(amount: number): WithdrawalCalculation {
 
 export function generateMarketFluctuations(days: number, targetValue: number, startValue: number): number[] {
   const fluctuations: number[] = []
-  const progressPerDay = 1 / days
+  const totalDays = Math.max(1, Math.floor(Number.isFinite(days) ? days : 1))
+  const progressPerDay = 1 / totalDays
   const totalGain = targetValue - startValue
-  
-  for (let day = 0; day < days; day++) {
+
+  for (let day = 0; day < totalDays; day++) {
     const expectedProgress = (day + 1) * progressPerDay
     const baseValue = startValue + (totalGain * expectedProgress)
     
@@ -99,15 +102,20 @@ export function calculateCycleProgress(investment: Investment): CycleProgress {
   
   const totalMs = endTime.getTime() - startTime.getTime()
   const elapsedMs = now.getTime() - startTime.getTime()
-  
-  const progressPercent = Math.min(100, Math.max(0, (elapsedMs / totalMs) * 100))
-  
+
+  const progressPercent = totalMs > 0
+    ? Math.min(100, Math.max(0, (elapsedMs / totalMs) * 100))
+    : 100
+
   const targetValue = calculateTargetReturn(investment.amount, investment.pool)
-  
-  const totalDays = config.durationDays
+
+  const totalDays = Math.max(1, config.durationDays)
   const currentDay = Math.floor((progressPercent / 100) * totalDays)
   const fluctuations = generateMarketFluctuations(totalDays, targetValue, investment.amount)
-  const currentValue = fluctuations[Math.min(currentDay, fluctuations.length - 1)] || investment.amount
+  const fallback = investment.amount
+  const currentValue = fluctuations.length > 0
+    ? fluctuations[Math.min(Math.max(0, currentDay), fluctuations.length - 1)] ?? fallback
+    : fallback
   
   const daysRemaining = Math.max(0, Math.ceil((endTime.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)))
   

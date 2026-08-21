@@ -6,7 +6,7 @@ test.describe("Dashboard", () => {
     await page.getByPlaceholder("name@example.com").fill("test@nextlevel.com")
     await page.getByPlaceholder("••••••••").fill("user123")
     await page.getByRole("button", { name: "Sign in" }).click()
-    await expect(page).toHaveURL("/dashboard", { timeout: 10000 })
+    await expect(page).toHaveURL("/app", { timeout: 10000 })
   })
 
   test("should display dashboard overview", async ({ page }) => {
@@ -23,25 +23,25 @@ test.describe("Dashboard", () => {
 
   test("should navigate to transactions page", async ({ page }) => {
     await page.getByRole("navigation").getByRole("link", { name: "Transactions" }).click()
-    await expect(page).toHaveURL("/dashboard/transactions")
+    await expect(page).toHaveURL("/app/transactions")
     await expect(page.getByRole("main").getByRole("heading", { name: "Transactions" })).toBeVisible()
   })
 
   test("should navigate to investments page", async ({ page }) => {
     await page.getByRole("navigation").getByRole("link", { name: "Buy Crypto" }).click()
-    await expect(page).toHaveURL("/dashboard/investments")
+    await expect(page).toHaveURL("/app/investments")
     await expect(page.getByRole("main").getByRole("heading", { name: "Buy Crypto" })).toBeVisible()
   })
 
   test("should navigate to withdraw page", async ({ page }) => {
     await page.getByRole("navigation").getByRole("link", { name: "Withdraw", exact: true }).click()
-    await expect(page).toHaveURL("/dashboard/withdraw")
+    await expect(page).toHaveURL("/app/withdraw")
     await expect(page.getByRole("heading", { name: "Withdraw", level: 1 })).toBeVisible()
   })
 
   test("should navigate to profile page", async ({ page }) => {
     await page.getByRole("navigation").getByRole("link", { name: "Profile" }).click()
-    await expect(page).toHaveURL("/dashboard/profile")
+    await expect(page).toHaveURL("/app/profile")
     await expect(page.getByRole("main").getByRole("heading", { name: "Profile" })).toBeVisible()
   })
 

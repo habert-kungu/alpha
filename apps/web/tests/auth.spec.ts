@@ -25,12 +25,12 @@ test("should login successfully with valid credentials", async ({ page }) => {
     await page.getByPlaceholder("name@example.com").fill("test@nextlevel.com")
     await page.getByPlaceholder("••••••••").fill("user123")
     await page.getByRole("button", { name: "Sign in" }).click()
-    await expect(page).toHaveURL("/dashboard", { timeout: 10000 })
+    await expect(page).toHaveURL("/app", { timeout: 10000 })
     await expect(page.getByText("Dashboard")).toBeVisible()
   })
 
   test("should redirect to login when accessing dashboard without auth", async ({ page }) => {
-    await page.goto("/dashboard")
+    await page.goto("/app")
     await expect(page).toHaveURL("/login")
   })
 
@@ -49,7 +49,7 @@ test("should login successfully with valid credentials", async ({ page }) => {
     await page.getByPlaceholder("••••••••").fill("password123")
     await page.getByRole("button", { name: "Create account" }).click()
 
-    await expect(page).toHaveURL("/dashboard", { timeout: 15000 })
+    await expect(page).toHaveURL("/app", { timeout: 15000 })
   })
 
   test("should show error for duplicate email on signup", async ({ page }) => {

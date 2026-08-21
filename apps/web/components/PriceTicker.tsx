@@ -114,7 +114,7 @@ export function CryptoTicker({ className = "", compact = false }: CryptoTickerPr
           <div key={coin.symbol} className="flex items-center gap-1.5">
             <span className="text-[10px] font-bold text-foreground">{coin.symbol}</span>
             <span className="text-[10px] font-mono text-foreground">${coin.price.split(".")[0]}</span>
-            <span className={`text-[9px] font-mono ${coin.positive ? "text-[oklch(0.55_0_150)]" : "text-[oklch(0.6_0_0)]"}`}>
+            <span className={`text-[9px] font-mono ${coin.positive ? "text-[oklch(0.58_0.1_165)]" : "text-[oklch(0.6_0_0)]"}`}>
               {coin.change}
             </span>
           </div>
@@ -132,11 +132,11 @@ export function CryptoTicker({ className = "", compact = false }: CryptoTickerPr
         >
           <span className="text-xs font-bold text-foreground">{coin.symbol}/USDT</span>
           <span className="text-xs font-mono text-foreground">${coin.price}</span>
-          <span className={`text-[10px] font-mono ${coin.positive ? "text-[oklch(0.55_0_150)]" : "text-[oklch(0.6_0_0)]"}`}>
+          <span className={`text-[10px] font-mono ${coin.positive ? "text-[oklch(0.58_0.1_165)]" : "text-[oklch(0.6_0_0)]"}`}>
             {coin.change}
           </span>
           {!isLoading && (
-            <span className="w-1.5 h-1.5 bg-[oklch(0.55_0_150)] rounded-full" />
+            <span className="w-1.5 h-1.5 bg-[oklch(0.58_0.1_165)] rounded-full" />
           )}
         </div>
       ))}
@@ -195,7 +195,7 @@ export function MiniTicker({ symbols = CRYPTO_SYMBOLS }: MiniTickerProps) {
         <div key={coin.symbol} className="text-[10px]">
           <span className="text-muted-foreground">{coin.symbol}</span>
           <span className="mx-1 text-foreground font-mono">${coin.price.split(".")[0]}</span>
-          <span className={coin.positive ? "text-[oklch(0.55_0_150)]" : "text-[oklch(0.6_0_0)]"}>
+          <span className={coin.positive ? "text-[oklch(0.58_0.1_165)]" : "text-[oklch(0.6_0_0)]"}>
             {coin.change}
           </span>
         </div>

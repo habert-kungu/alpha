@@ -1,13 +1,24 @@
-import { Geist, Geist_Mono, Inter } from "next/font/google"
+import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google"
 
 import "@workspace/ui/globals.css"
 import { Providers } from "./providers/providers"
 import { cn } from "@workspace/ui/lib/utils";
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'})
+export const metadata = {
+  title: "AlphaReserve",
+  description: "AlphaReserve — grow your crypto with our proven trading pool.",
+}
 
-const fontMono = Geist_Mono({
+// Deriv's house typeface: IBM Plex Sans for UI, IBM Plex Mono for numerics.
+const fontSans = IBM_Plex_Sans({
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-sans",
+})
+
+const fontMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
   variable: "--font-mono",
 })
 
@@ -20,7 +31,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
+      className={cn("antialiased", fontMono.variable, "font-sans", fontSans.variable)}
     >
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />

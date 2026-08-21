@@ -6,10 +6,10 @@ test.describe("Admin Panel", () => {
     await page.getByPlaceholder("name@example.com").fill("test@nextlevel.com")
     await page.getByPlaceholder("••••••••").fill("user123")
     await page.getByRole("button", { name: "Sign in" }).click()
-    await expect(page).toHaveURL("/dashboard", { timeout: 10000 })
+    await expect(page).toHaveURL("/app", { timeout: 10000 })
 
-    await page.goto("/admin")
-    await expect(page).toHaveURL("/dashboard")
+    await page.goto("/app/admin")
+    await expect(page).toHaveURL("/app")
   })
 
   test("admin should access admin panel", async ({ page }) => {
@@ -18,7 +18,7 @@ test.describe("Admin Panel", () => {
     await page.getByPlaceholder("••••••••").fill("admin123")
     await page.getByRole("button", { name: "Sign in" }).click()
 
-    await expect(page).toHaveURL("/admin", { timeout: 10000 })
+    await expect(page).toHaveURL("/app/admin", { timeout: 10000 })
   })
 
   test("admin should see dashboard stats", async ({ page }) => {
@@ -26,7 +26,7 @@ test.describe("Admin Panel", () => {
     await page.getByPlaceholder("name@example.com").fill("admin@nextlevel.com")
     await page.getByPlaceholder("••••••••").fill("admin123")
     await page.getByRole("button", { name: "Sign in" }).click()
-    await expect(page).toHaveURL("/admin", { timeout: 10000 })
+    await expect(page).toHaveURL("/app/admin", { timeout: 10000 })
 
     await expect(page.getByText("Total Users")).toBeVisible()
     await expect(page.getByText("Active Investments")).toBeVisible()
@@ -37,10 +37,10 @@ test.describe("Admin Panel", () => {
     await page.getByPlaceholder("name@example.com").fill("admin@nextlevel.com")
     await page.getByPlaceholder("••••••••").fill("admin123")
     await page.getByRole("button", { name: "Sign in" }).click()
-    await expect(page).toHaveURL("/admin", { timeout: 10000 })
+    await expect(page).toHaveURL("/app/admin", { timeout: 10000 })
 
     await page.getByRole("navigation").getByRole("link", { name: "Deposits", exact: true }).click()
-    await expect(page).toHaveURL("/admin/deposits")
+    await expect(page).toHaveURL("/app/admin/deposits")
     await expect(page.getByRole("main").getByRole("heading", { name: "Deposits" })).toBeVisible()
   })
 
@@ -49,10 +49,10 @@ test.describe("Admin Panel", () => {
     await page.getByPlaceholder("name@example.com").fill("admin@nextlevel.com")
     await page.getByPlaceholder("••••••••").fill("admin123")
     await page.getByRole("button", { name: "Sign in" }).click()
-    await expect(page).toHaveURL("/admin", { timeout: 10000 })
+    await expect(page).toHaveURL("/app/admin", { timeout: 10000 })
 
     await page.getByRole("navigation").getByRole("link", { name: "Users", exact: true }).click()
-    await expect(page).toHaveURL("/admin/users")
+    await expect(page).toHaveURL("/app/admin/users")
     await expect(page.getByRole("main").getByRole("heading", { name: "Users" })).toBeVisible()
   })
 
@@ -61,10 +61,10 @@ test.describe("Admin Panel", () => {
     await page.getByPlaceholder("name@example.com").fill("admin@nextlevel.com")
     await page.getByPlaceholder("••••••••").fill("admin123")
     await page.getByRole("button", { name: "Sign in" }).click()
-    await expect(page).toHaveURL("/admin", { timeout: 10000 })
+    await expect(page).toHaveURL("/app/admin", { timeout: 10000 })
 
     await page.getByRole("navigation").getByRole("link", { name: "Investments", exact: true }).click()
-    await expect(page).toHaveURL("/admin/investments")
+    await expect(page).toHaveURL("/app/admin/investments")
     await expect(page.getByRole("main").getByRole("heading", { name: "Investments" })).toBeVisible()
   })
 
@@ -73,10 +73,10 @@ test.describe("Admin Panel", () => {
     await page.getByPlaceholder("name@example.com").fill("admin@nextlevel.com")
     await page.getByPlaceholder("••••••••").fill("admin123")
     await page.getByRole("button", { name: "Sign in" }).click()
-    await expect(page).toHaveURL("/admin", { timeout: 10000 })
+    await expect(page).toHaveURL("/app/admin", { timeout: 10000 })
 
     await page.getByRole("navigation").getByRole("link", { name: "Transactions", exact: true }).click()
-    await expect(page).toHaveURL("/admin/transactions")
+    await expect(page).toHaveURL("/app/admin/transactions")
     await expect(page.getByRole("main").getByRole("heading", { name: "Transactions" })).toBeVisible()
   })
 
@@ -85,9 +85,9 @@ test.describe("Admin Panel", () => {
     await page.getByPlaceholder("name@example.com").fill("admin@nextlevel.com")
     await page.getByPlaceholder("••••••••").fill("admin123")
     await page.getByRole("button", { name: "Sign in" }).click()
-    await expect(page).toHaveURL("/admin", { timeout: 10000 })
+    await expect(page).toHaveURL("/app/admin", { timeout: 10000 })
 
-    await page.getByRole("navigation").getByRole("link", { name: "Back to User" }).click()
-    await expect(page).toHaveURL("/dashboard")
+    await page.getByRole("link", { name: "User", exact: true }).click()
+    await expect(page).toHaveURL("/app")
   })
 })

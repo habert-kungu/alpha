@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
-const protectedRoutes = ["/dashboard"]
+const protectedRoutes = ["/app"]
 const authRoutes = ["/login", "/signup"]
 
 export async function middleware(request: NextRequest) {
@@ -18,12 +18,12 @@ export async function middleware(request: NextRequest) {
 
   if (authRoutes.some(route => pathname === route || pathname.startsWith(route + "/"))) {
     if (token) {
-      return NextResponse.redirect(new URL("/dashboard", request.url))
+      return NextResponse.redirect(new URL("/app", request.url))
     }
     return NextResponse.next()
   }
 
-  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+  if (pathname === "/app/admin" || pathname.startsWith("/app/admin/")) {
     if (!token) {
       return NextResponse.redirect(new URL("/login", request.url))
     }
@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
       const data = await res.json()
 
       if (!data.isAdmin) {
-        return NextResponse.redirect(new URL("/dashboard", request.url))
+        return NextResponse.redirect(new URL("/app", request.url))
       }
     } catch {
       return NextResponse.redirect(new URL("/login", request.url))

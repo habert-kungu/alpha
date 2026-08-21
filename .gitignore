@@ -14,6 +14,12 @@ node_modules
 
 # Testing
 coverage
+test-results
+playwright-report
+
+# Prisma / local database
+*.db
+*.db-journal
 
 # Turbo
 .turbo
