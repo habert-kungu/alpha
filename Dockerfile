@@ -22,7 +22,10 @@ RUN npm ci
 
 # ---- Builder ------------------------------------------------------------
 FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
+# Bring ALL installed node_modules from deps (root + workspace-local, e.g.
+# apps/web/node_modules where the prisma binary lives), then overlay the source
+# (node_modules is .dockerignored, so the copied modules are preserved).
+COPY --from=deps /app ./
 COPY . .
 # Build the Next.js standalone bundle (the web build script runs `prisma
 # generate` first). prisma is a workspace-local binary, so run it from apps/web.
