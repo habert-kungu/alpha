@@ -15,6 +15,9 @@ COPY apps/web/package.json apps/web/package.json
 COPY packages/ui/package.json packages/ui/package.json
 COPY packages/eslint-config/package.json packages/eslint-config/package.json
 COPY packages/typescript-config/package.json packages/typescript-config/package.json
+# The web package's postinstall runs `prisma generate`, so the schema must be
+# present before install.
+COPY apps/web/prisma ./apps/web/prisma
 RUN npm ci
 
 # ---- Builder ------------------------------------------------------------
