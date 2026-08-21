@@ -4,8 +4,9 @@ services:
       context: .
       dockerfile: Dockerfile
     image: alphareserve-web
+    # Bound to localhost only — Caddy (below) fronts the public domain over HTTPS.
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       NODE_ENV: production
       DATABASE_URL: file:/data/prod.db
@@ -28,5 +29,25 @@ services:
       retries: 3
       start_period: 20s
 
+  # Reverse proxy with automatic HTTPS (Let's Encrypt). Opt-in:
+  #   DOMAIN=app.example.com docker compose --profile proxy up -d --build
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["proxy"]
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN (e.g. app.example.com) to use the proxy}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+
 volumes:
   alphareserve-data:
+  caddy-data:
+  caddy-config:

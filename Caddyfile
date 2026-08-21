@@ -1,0 +1,6 @@
+# Automatic HTTPS via Let's Encrypt for your domain.
+# DOMAIN is injected from the environment by docker-compose.
+{$DOMAIN} {
+	encode zstd gzip
+	reverse_proxy web:3000
+}
