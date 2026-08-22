@@ -8,7 +8,7 @@ import Link from "next/link"
 const FAQS = [
   {
     q: "How do I start investing?",
-    a: "Create an account, choose a plan (24H or Weekly Pool), and contact us via Telegram to initiate your investment.",
+    a: "Create an account, choose a plan (48-Hour or Weekly Pool), and contact us via Telegram to initiate your investment.",
   },
   {
     q: "What is the minimum investment?",
@@ -16,11 +16,11 @@ const FAQS = [
   },
   {
     q: "How are returns calculated?",
-    a: "Returns are fixed: 6.4x for 24H pool and 8x for Weekly pool. No trading experience needed.",
+    a: "Returns are fixed at 10x for both pools — e.g. $500 → $5,000 on the 48-Hour plan, $2,000 → $20,000 on the Weekly plan. No trading experience needed.",
   },
   {
     q: "When do I receive returns?",
-    a: "24H pool returns within 24 hours after cycle completes. Weekly pool within 7 days.",
+    a: "48-Hour pool profits are paid within 48 hours. Weekly pool profits are paid after 7 days.",
   },
   {
     q: "Is my capital guaranteed?",

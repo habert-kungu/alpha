@@ -7,19 +7,26 @@ export interface PoolConfig {
 }
 
 export const POOLS: Record<PoolType, PoolConfig> = {
+  // `daily` is the stored key for the 48-hour pool (kept for existing rows).
   daily: {
     name: 'daily',
-    durationDays: 1,
-    roiMultiplier: 6.4,
+    durationDays: 2,
+    roiMultiplier: 10,
   },
   weekly: {
     name: 'weekly',
     durationDays: 7,
-    roiMultiplier: 8,
+    roiMultiplier: 10,
   },
 }
 
 export const WITHDRAWAL_TAX_RATE = 0.165 // 16.5%
+
+/** Human label for a stored pool key. */
+export function poolLabel(pool: string, short = false): string {
+  if (pool === 'daily') return short ? '48H' : '48H Pool'
+  return short ? 'Weekly' : 'Weekly Pool'
+}
 
 export interface Investment {
   id: string

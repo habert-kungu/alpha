@@ -107,7 +107,7 @@ export default function InvestmentsPage() {
                     </div>
                   </td>
                   <td className="px-3 py-2.5 text-xs text-foreground">
-                    {inv.pool === "daily" ? "24H" : "Weekly"} <span className="text-[10px] text-muted-foreground">· {inv.roi}x</span>
+                    {inv.pool === "daily" ? "48H" : "Weekly"} <span className="text-[10px] text-muted-foreground">· {inv.roi}x</span>
                   </td>
                   <td className="px-3 py-2.5 text-right text-xs font-medium tabular-nums text-foreground">${inv.amount.toLocaleString()}</td>
                   <td className="px-3 py-2.5 text-right text-xs font-medium tabular-nums text-[var(--color-success)]">${Math.round(inv.amount * inv.roi).toLocaleString()}</td>

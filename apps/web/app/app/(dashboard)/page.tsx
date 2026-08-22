@@ -226,7 +226,7 @@ export default function DashboardPage() {
                         Active
                       </span>
                       <span className="text-[10px] sm:text-xs text-muted-foreground">
-                        {activeCycle.pool === 'daily' ? '24H Pool' : 'Weekly Pool'}
+                        {activeCycle.pool === 'daily' ? '48H Pool' : 'Weekly Pool'}
                       </span>
                     </div>
                     <h2 className="text-base sm:text-lg font-semibold text-foreground">Cycle Progress</h2>
@@ -255,7 +255,7 @@ export default function DashboardPage() {
                 {/* Start New Investment */}
                 <div className="flex items-center justify-between">
                   <div className="text-xs text-muted-foreground">
-                    ROI: <span className="text-[oklch(0.62_0.12_178)] font-medium">{activeCycle.pool === 'daily' ? '6.4x' : '8x'}</span>
+                    ROI: <span className="text-[oklch(0.62_0.12_178)] font-medium">{activeCycle.pool === 'daily' ? '10x' : '10x'}</span>
                   </div>
                   <Link 
                     href="/app/investments"
@@ -475,16 +475,16 @@ export default function DashboardPage() {
             <div className="space-y-2 sm:space-y-3">
               <Link href="/app/investments" className="block p-3 sm:p-4 rounded-lg border border-border hover:border-[oklch(0.62_0.12_178)/40] hover:bg-secondary/50 transition-all group">
                 <div className="flex items-center justify-between mb-1 sm:mb-2">
-                  <span className="text-xs sm:text-sm font-medium text-foreground">24H Pool</span>
-                  <span className="text-[10px] sm:text-xs font-mono text-[oklch(0.62_0.12_178)]">6.4x</span>
+                  <span className="text-xs sm:text-sm font-medium text-foreground">48H Pool</span>
+                  <span className="text-[10px] sm:text-xs font-mono text-[oklch(0.62_0.12_178)]">10x</span>
                 </div>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">24 hours duration</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">48 hours · paid within 48h</p>
               </Link>
               <Link href="/app/investments" className="block p-3 sm:p-4 rounded-lg border-2 border-[oklch(0.62_0.12_178)/30 bg-[oklch(0.62_0.12_178)/5] hover:bg-[oklch(0.62_0.12_178)/10 transition-all group relative">
                 <div className="absolute -top-2 right-2 text-[9px] sm:text-[10px] font-medium px-1.5 sm:px-2 py-0.5 bg-[oklch(0.62_0.12_178)] text-white rounded">Popular</div>
                 <div className="flex items-center justify-between mb-1 sm:mb-2">
                   <span className="text-xs sm:text-sm font-medium text-foreground">Weekly Pool</span>
-                  <span className="text-[10px] sm:text-xs font-mono text-[oklch(0.62_0.12_178)]">8x</span>
+                  <span className="text-[10px] sm:text-xs font-mono text-[oklch(0.62_0.12_178)]">10x</span>
                 </div>
                 <p className="text-[10px] sm:text-xs text-muted-foreground">7 days duration</p>
               </Link>

@@ -7,7 +7,7 @@ const strategies = [
     id: "01",
     name: "Crypto Trend Following",
     description: "We identify high-probability trends on 4H and Daily timeframes using EMA crossovers and ADX confirmation. Trades are entered only when the market is clearly trending — never in ranging conditions.",
-    winRate: "82%",
+    winRate: "91%",
     riskReward: "3.2:1",
     pairs: "6+",
     status: "Primary",
@@ -15,13 +15,13 @@ const strategies = [
     markets: ["ETH/USDT", "BTC/USDT", "SOL/USDT", "BNB/USDT"],
     timeframe: "4H entry, Daily trend filter",
     indicators: "EMA 50/200, ADX, RSI",
-    confidence: 82,
+    confidence: 91,
   },
   {
     id: "02",
     name: "Precision Scalping",
     description: "Short-duration trades on the 1m and 5m charts during London and New York sessions. We target 10–20 pip moves with tight stop-losses using order flow and liquidity zone analysis.",
-    winRate: "76%",
+    winRate: "87%",
     riskReward: "2.5:1",
     pairs: "8-15",
     status: "Active",
@@ -29,13 +29,13 @@ const strategies = [
     markets: ["ETH/USDT", "EUR/GBP", "XRP/USDT"],
     timeframe: "London Open, NY Open",
     indicators: "VWAP, Order Flow, Bollinger Bands",
-    confidence: 76,
+    confidence: 87,
   },
   {
     id: "03",
     name: "Breakout Trading",
     description: "We wait for price to consolidate at key support/resistance zones, then enter aggressively on confirmed breakouts with volume. News catalysts and session opens are our primary triggers.",
-    winRate: "79%",
+    winRate: "89%",
     riskReward: "4.1:1",
     pairs: "8+",
     status: "Active",
@@ -43,7 +43,7 @@ const strategies = [
     markets: ["BNB/USDT", "GBP/JPY", "DOGE/USDT"],
     timeframe: "15m confirmation, 1H structure",
     indicators: "Volume, S/R Zones, ATR",
-    confidence: 79,
+    confidence: 89,
   },
 ]
 
@@ -143,7 +143,7 @@ export default function StrategiesPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-y sm:divide-y-0 divide-border">
           <div className="py-4 text-center">
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Avg Win Rate</div>
-            <div className="text-lg font-medium text-[var(--color-success)]">79%</div>
+            <div className="text-lg font-medium text-[var(--color-success)]">89%</div>
           </div>
           <div className="py-4 text-center">
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Avg Reward:Risk</div>

@@ -13,7 +13,7 @@ const rules = [
     number: "02",
     title: "Minimum 3:1 Reward-to-Risk Ratio",
     description:
-      "Every trade is only entered when the potential reward is at least 3× the risk. A 79% win rate combined with a 3:1 R:R means the pool grows consistently even when some trades lose.",
+      "Every trade is only entered when the potential reward is at least 3× the risk. An 89% win rate combined with a 3:1 R:R means the pool grows consistently even when some trades lose.",
   },
   {
     number: "03",

@@ -85,7 +85,7 @@ export default function AdminDashboardPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="truncate text-xs text-foreground sm:text-sm">
-                      <span className="font-medium">{a.userName}</span> · ${a.amount.toLocaleString()} {a.pool === "daily" ? "24H" : "Weekly"} Pool
+                      <span className="font-medium">{a.userName}</span> · ${a.amount.toLocaleString()} {a.pool === "daily" ? "48H" : "Weekly"} Pool
                     </div>
                     <div className="text-[10px] text-muted-foreground">{timeAgo(a.createdAt)}</div>
                   </div>

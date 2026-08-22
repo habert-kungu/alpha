@@ -31,22 +31,21 @@ const prices = [
   { symbol: "AVAX", price: "38.90", change: "+2.11%", positive: true },
 ]
 
-const plan24h = [
-  { deposit: "500", return: "3,200", profit: "2,700" },
-  { deposit: "600", return: "3,800", profit: "3,200" },
-  { deposit: "700", return: "4,200", profit: "3,500" },
-  { deposit: "800", return: "4,800", profit: "4,000" },
-  { deposit: "900", return: "5,000", profit: "4,100" },
-  { deposit: "1,000", return: "6,000", profit: "5,000" },
+const plan48h = [
+  { deposit: "500", return: "5,000", profit: "4,500" },
+  { deposit: "800", return: "8,000", profit: "7,200" },
+  { deposit: "1,000", return: "10,000", profit: "9,000" },
+  { deposit: "1,500", return: "15,000", profit: "13,500" },
+  { deposit: "2,000", return: "20,000", profit: "18,000" },
 ]
 
 const planWeekly = [
-  { deposit: "2,000", return: "16,000", profit: "14,000" },
-  { deposit: "3,000", return: "24,000", profit: "21,000" },
-  { deposit: "4,000", return: "32,000", profit: "28,000" },
-  { deposit: "5,000", return: "40,000", profit: "35,000" },
-  { deposit: "6,000", return: "48,000", profit: "42,000" },
-  { deposit: "7,000", return: "56,000", profit: "49,000" },
+  { deposit: "2,000", return: "20,000", profit: "18,000" },
+  { deposit: "3,000", return: "30,000", profit: "27,000" },
+  { deposit: "4,000", return: "40,000", profit: "36,000" },
+  { deposit: "5,000", return: "50,000", profit: "45,000" },
+  { deposit: "6,000", return: "60,000", profit: "54,000" },
+  { deposit: "7,000", return: "70,000", profit: "63,000" },
 ]
 
 const services = [
@@ -251,11 +250,11 @@ function Hero() {
               {/* Stats */}
               <div className="hero-text mx-auto grid max-w-md grid-cols-3 gap-6 lg:mx-0">
                 <div className="text-center lg:text-left">
-                  <div className="text-2xl font-bold text-white">6.4x</div>
-                  <div className="text-xs text-white/70">24H Returns</div>
+                  <div className="text-2xl font-bold text-white">10x</div>
+                  <div className="text-xs text-white/70">48H Returns</div>
                 </div>
                 <div className="text-center lg:text-left">
-                  <div className="text-2xl font-bold text-white">8x</div>
+                  <div className="text-2xl font-bold text-white">10x</div>
                   <div className="text-xs text-white/70">Weekly Returns</div>
                 </div>
                 <div className="text-center lg:text-left">
@@ -341,16 +340,16 @@ function PoolStats() {
       sparkline: [50, 45, 55, 60, 58, 65, 70, 75, 80, 78, 85, 90],
     },
     {
-      value: 6.4,
+      value: 10,
       prefix: "",
       suffix: "x",
-      label: "24H Cycle Return",
+      label: "48H Cycle Return",
       change: "+0.8",
-      trend: "Avg. across 24h",
+      trend: "Paid within 48 hours",
       sparkline: [40, 42, 45, 48, 50, 52, 55, 58, 60, 62, 65, 68],
     },
     {
-      value: 8,
+      value: 10,
       prefix: "",
       suffix: "x",
       label: "Weekly Cycle Return",
@@ -594,7 +593,7 @@ function PlanCard({
   title: string
   subtitle: string
   roi: string
-  plans: typeof plan24h
+  plans: typeof plan48h
   cta: string
   popular?: boolean
 }) {
@@ -784,38 +783,57 @@ function InvestmentPlans() {
 
       <div className="relative z-10 mx-auto max-w-5xl px-8">
         <div className="reveal mb-16 text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/5 px-4 py-2 text-sm font-medium text-primary">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-[var(--bg-success)] px-4 py-2 text-sm font-semibold text-[var(--color-success)]">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--color-success)]" />
-            Investment Plans
+            Now active
           </div>
-          <h2 className="mb-4 text-4xl font-bold text-primary md:text-5xl">
-            Choose Your Plan
+          <h2 className="mb-5 text-3xl font-bold text-primary md:text-5xl">
+            <span aria-hidden="true">🔥 </span>Alpha Reserve Pool Trading Program is now active<span aria-hidden="true"> 💵</span>
           </h2>
-          <p className="mx-auto max-w-lg text-lg text-muted-foreground">
-            Select a cycle duration and stake amount. Returns are guaranteed.
+          <p className="mx-auto max-w-3xl text-base leading-relaxed text-muted-foreground md:text-lg">
+            This program is tailored for busy individuals who may not have the time or experience to trade independently,
+            as well as traders who find it challenging to consistently follow trading signals. Our pool trading system is
+            professionally managed to deliver steady performance, efficiency, and dependable results.
           </p>
         </div>
 
         <div className="grid gap-8 md:grid-cols-2">
           <div className="plan-card-anim opacity-0">
             <PlanCard
-              title="24-Hour Pool"
-              subtitle="Quick returns in 24h"
-              roi="6.4x ROI"
-              plans={plan24h}
-              cta="Start 24H Cycle"
+              title="48-Hour Investment Plan"
+              subtitle="Profits paid within 48 hours"
+              roi="10x Returns"
+              plans={plan48h}
+              cta="Start 48H Cycle"
             />
           </div>
           <div className="plan-card-anim opacity-0">
             <PlanCard
-              title="Weekly Pool"
-              subtitle="Maximum returns in 7 days"
-              roi="8x ROI"
+              title="Weekly Investment Plan"
+              subtitle="Profits paid after 7 days"
+              roi="10x Returns"
               plans={planWeekly}
               cta="Start Weekly Cycle"
               popular={true}
             />
           </div>
+        </div>
+
+        <div className="reveal mx-auto mt-16 max-w-3xl text-center">
+          <p className="text-base text-muted-foreground md:text-lg">
+            We are committed to achieving strong outcomes through expertly managed trading strategies with a win rate of{" "}
+            <span className="font-semibold text-[var(--color-success)]">89%</span>.
+          </p>
+          <a
+            href="https://t.me/khan_bashiri"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-8 inline-flex items-center gap-3 rounded-full bg-primary px-7 py-4 text-base font-semibold text-primary-foreground shadow-lg transition-all hover:scale-[1.03] hover:shadow-xl"
+          >
+            <RiTelegramLine className="h-5 w-5" />
+            DM the admin now to secure your spot
+          </a>
+          <p className="mt-3 text-xs text-muted-foreground">Capital in USDT (TRC20) or BTC · returns shown per plan</p>
         </div>
       </div>
     </section>
@@ -990,7 +1008,7 @@ function HowItWorks() {
 
   const steps = [
     { number: "01", title: "Join Telegram", desc: "Connect with the team" },
-    { number: "02", title: "Choose Cycle", desc: "24h or weekly" },
+    { number: "02", title: "Choose Cycle", desc: "48h or weekly" },
     { number: "03", title: "Send Crypto", desc: "USDT confirmed in 1h" },
     { number: "04", title: "Receive Return", desc: "Full USDT return" },
   ]
@@ -1130,7 +1148,7 @@ function HowItWorks() {
                   Choose Your Cycle
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Pick 24h or weekly
+                  Pick 48h or weekly
                 </p>
               </div>
             </div>

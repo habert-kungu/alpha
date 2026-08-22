@@ -176,7 +176,7 @@ export function investmentDecisionEmail(
   to: string,
   opts: { approved: boolean; amount: number; pool: string; targetValue?: number; name?: string | null }
 ) {
-  const poolLabel = opts.pool === "daily" ? "24H Pool" : "Weekly Pool"
+  const poolLabel = opts.pool === "daily" ? "48H Pool" : "Weekly Pool"
   const amount = `$${opts.amount.toLocaleString()}`
   const body = opts.approved
     ? `<p>${opts.name ? `Hi ${escape(opts.name)},` : "Hi,"}</p>
@@ -199,7 +199,7 @@ export function depositReceivedEmail(
   to: string,
   opts: { amount: number; pool: string; txHash: string; investmentId: string; roi: number; name?: string | null }
 ) {
-  const poolLabel = opts.pool === "daily" ? "24H Pool" : "Weekly Pool"
+  const poolLabel = opts.pool === "daily" ? "48H Pool" : "Weekly Pool"
   const amount = `$${opts.amount.toLocaleString()}`
   const target = `$${Math.round(opts.amount * opts.roi).toLocaleString()}`
   return sendMail({
@@ -224,7 +224,7 @@ export function newDepositAdminEmail(opts: { userEmail: string; userName?: strin
   return sendMail({
     to,
     subject: `New deposit request — $${opts.amount.toLocaleString()} from ${opts.userName || opts.userEmail}`,
-    html: layout("New deposit request", `<p><strong>${escape(opts.userName || opts.userEmail)}</strong> (${escape(opts.userEmail)}) submitted a ${opts.pool === "daily" ? "24H" : "Weekly"} Pool deposit.</p>
+    html: layout("New deposit request", `<p><strong>${escape(opts.userName || opts.userEmail)}</strong> (${escape(opts.userEmail)}) submitted a ${opts.pool === "daily" ? "48H" : "Weekly"} Pool deposit.</p>
 <p style="margin:16px 0;padding:12px 14px;background:#f4f5f7;border-radius:8px;font-family:ui-monospace,Menlo,monospace;font-size:13px">
   <strong>Amount:</strong> $${opts.amount.toLocaleString()}<br/>
   <strong>Network:</strong> ${escape(opts.network || "TRC20")}<br/>

@@ -6,6 +6,7 @@ import * as React from "react"
 import Link from "next/link"
 import { invalidateCache } from "@/lib/use-cached-fetch"
 import { DEPOSIT_NETWORKS, depositNetwork, type DepositNetworkKey } from "@/lib/deposit-addresses"
+import { POOLS } from "@/lib/trading"
 
 export default function InvestmentsPage() {
   const [copiedAddress, setCopiedAddress] = React.useState(false)
@@ -53,8 +54,8 @@ export default function InvestmentsPage() {
         return
       }
 
-      const roi = selectedPlan === "weekly" ? "8x" : "6.4x"
-      const message = `🎯 *New Stake Request*\n\n*Plan:* ${selectedPlan === "weekly" ? "Weekly Pool" : "24H Pool"} (${roi} ROI)\n*Amount:* $${amount}\n*Network:* ${wallet.label}\n*TX Hash:* ${txHash}\n*DB ID:* ${data.investment?.id}\n${notes ? `\n*Notes:* ${notes}` : ""}`
+      const roi = `${POOLS[selectedPlan === "weekly" ? "weekly" : "daily"].roiMultiplier}x`
+      const message = `🎯 *New Stake Request*\n\n*Plan:* ${selectedPlan === "weekly" ? "Weekly Pool" : "48H Pool"} (${roi} ROI)\n*Amount:* $${amount}\n*Network:* ${wallet.label}\n*TX Hash:* ${txHash}\n*DB ID:* ${data.investment?.id}\n${notes ? `\n*Notes:* ${notes}` : ""}`
       const telegramUrl = `https://t.me/khan_bashiri?text=${encodeURIComponent(message)}`
       window.open(telegramUrl, "_blank")
 
@@ -72,7 +73,7 @@ export default function InvestmentsPage() {
   }
 
   const calculatedReturn = amount
-    ? Math.round(parseFloat(amount) * (selectedPlan === "weekly" ? 8 : 6.4))
+    ? Math.round(parseFloat(amount) * POOLS[selectedPlan === "weekly" ? "weekly" : "daily"].roiMultiplier)
     : 0
   const fee = amount ? Math.round(parseFloat(amount) * 0.165) : 0
   const net = amount ? parseFloat(amount) - fee : 0
@@ -105,15 +106,15 @@ export default function InvestmentsPage() {
           <div className="mb-2 flex items-start justify-between">
             <div>
               <div className="text-sm font-medium text-foreground sm:text-base">
-                24H Pool
+                48H Pool
               </div>
               <div className="text-[10px] text-muted-foreground sm:text-xs">
-                24 hours
+                48 hours · profits paid within 48h
               </div>
             </div>
           </div>
           <div className="text-lg font-semibold text-foreground sm:text-xl">
-            6.4x ROI
+            10x ROI
           </div>
         </button>
 
@@ -130,12 +131,12 @@ export default function InvestmentsPage() {
                 Weekly Pool
               </div>
               <div className="text-[10px] text-muted-foreground sm:text-xs">
-                7 days
+                7 days · profits paid after 7 days
               </div>
             </div>
           </div>
           <div className="text-lg font-semibold text-foreground sm:text-xl">
-            8x ROI
+            10x ROI
           </div>
         </button>
       </div>
@@ -241,7 +242,7 @@ export default function InvestmentsPage() {
               <div className="p-3 sm:p-4">
                 <div className="mb-1 font-mono text-[10px] uppercase text-muted-foreground">Expected return</div>
                 <div className="text-lg font-bold text-[var(--color-success)] sm:text-xl">${calculatedReturn.toLocaleString()}</div>
-                <div className="text-[10px] text-muted-foreground">{selectedPlan === "weekly" ? "8x · 7 days" : "6.4x · 24 hours"}</div>
+                <div className="text-[10px] text-muted-foreground">{selectedPlan === "weekly" ? "10x · 7 days" : "10x · 48 hours"}</div>
               </div>
               <div className="p-3 sm:p-4">
                 <div className="mb-1 font-mono text-[10px] uppercase text-muted-foreground">Payout after 16.5% fee</div>
@@ -300,7 +301,7 @@ export default function InvestmentsPage() {
         </h3>
         <div className="space-y-3 sm:space-y-4">
           {[
-            { step: "1", title: "Select Plan", desc: "24H or Weekly pool" },
+            { step: "1", title: "Select Plan", desc: "48H or Weekly pool" },
             {
               step: "2",
               title: "Send Crypto",
@@ -347,8 +348,8 @@ export default function InvestmentsPage() {
                 <span className="text-muted-foreground">Plan</span>
                 <span className="font-medium text-foreground">
                   {selectedPlan === "weekly"
-                    ? "Weekly Pool (8x)"
-                    : "24H Pool (6.4x)"}
+                    ? "Weekly Pool (10x)"
+                    : "48H Pool (10x)"}
                 </span>
               </div>
               <div className="flex justify-between border-b border-border py-2">

@@ -45,7 +45,7 @@ async function main() {
       network: "TRC20",
       txHash: "0xabc123",
       status: "active",
-      roi: 6.4,
+      roi: 10,
     },
   })
 
@@ -57,7 +57,7 @@ async function main() {
       network: "TRC20",
       txHash: "0xdef456",
       status: "active",
-      roi: 8,
+      roi: 10,
     },
   })
   console.log("Created sample investments")
@@ -69,7 +69,7 @@ async function main() {
       userId: testUser.id,
       startValue: 100,
       currentValue: 250,
-      targetValue: 640,
+      targetValue: 1000,
       progress: 50,
       status: "active",
     },
@@ -81,7 +81,7 @@ async function main() {
       userId: testUser.id,
       startValue: 500,
       currentValue: 1500,
-      targetValue: 4000,
+      targetValue: 5000,
       progress: 30,
       status: "active",
     },

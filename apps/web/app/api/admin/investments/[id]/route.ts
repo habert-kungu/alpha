@@ -64,7 +64,7 @@ export async function PATCH(request: NextRequest) {
           netAmount: updated.amount,
           currency: 'USDT',
           status: 'completed',
-          note: `${updated.pool === 'daily' ? '24H' : 'Weekly'} Pool investment activated`,
+          note: `${updated.pool === 'daily' ? '48H' : 'Weekly'} Pool investment activated`,
         },
       })
 
@@ -74,7 +74,7 @@ export async function PATCH(request: NextRequest) {
         pool: updated.pool,
         targetValue,
         cycleId: cycle.id,
-        message: `Your ${updated.pool === 'daily' ? '24H' : 'Weekly'} Pool investment of $${updated.amount} has been approved!`,
+        message: `Your ${updated.pool === 'daily' ? '48H' : 'Weekly'} Pool investment of $${updated.amount} has been approved!`,
       })
       void investmentDecisionEmail(investment.user.email, { approved: true, amount: updated.amount, pool: updated.pool, targetValue, name: investment.user.name })
     } else if (action === 'reject') {

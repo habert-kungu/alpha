@@ -37,7 +37,7 @@ export function getUserStats(userId: string): UserStats {
   const activeCycles: CycleProgress[] = activeInvestments.map(investment => {
     const now = new Date()
     const startTime = new Date(investment.createdAt)
-    const config = investment.pool === 'daily' ? { durationDays: 1 } : { durationDays: 7 }
+    const config = investment.pool === 'daily' ? { durationDays: 2 } : { durationDays: 7 }
     const endTime = new Date(startTime.getTime() + config.durationDays * 24 * 60 * 60 * 1000)
     
     const totalMs = endTime.getTime() - startTime.getTime()
@@ -46,7 +46,7 @@ export function getUserStats(userId: string): UserStats {
     const progressPercent = Math.min(100, Math.max(0, (elapsedMs / totalMs) * 100))
     
     const targetValue = investment.pool === 'daily' 
-      ? investment.amount * 6.4 
+      ? investment.amount * 10 
       : investment.amount * 8
     
     const currentValue = investment.amount + (targetValue - investment.amount) * (progressPercent / 100)
@@ -66,7 +66,7 @@ export function getUserStats(userId: string): UserStats {
   })
   
   const totalAssets = completedInvestments.reduce((sum, i) => {
-    const ret = i.pool === 'daily' ? i.amount * 6.4 : i.amount * 8
+    const ret = i.pool === 'daily' ? i.amount * 10 : i.amount * 10
     return sum + ret
   }, 0) + activeInvestments.reduce((sum, i) => sum + i.amount, 0)
   
@@ -75,7 +75,7 @@ export function getUserStats(userId: string): UserStats {
     .reduce((sum, c) => sum + (c.targetValue - c.currentValue), 0)
   
   const totalProfit = completedInvestments.reduce((sum, i) => {
-    const ret = i.pool === 'daily' ? i.amount * 6.4 : i.amount * 8
+    const ret = i.pool === 'daily' ? i.amount * 10 : i.amount * 10
     return sum + (ret - i.amount)
   }, 0)
   

@@ -5,9 +5,11 @@ import { triggerNotification, CHANNELS, EVENTS } from '@/lib/pusher'
 import { DEPOSIT_NETWORK_KEYS } from '@/lib/deposit-addresses'
 import prisma from '@/lib/db'
 
+import { POOLS } from '@/lib/trading'
+
 const POOL_CONFIG = {
-  daily: { roi: 6.4, durationDays: 1 },
-  weekly: { roi: 8, durationDays: 7 },
+  daily: { roi: POOLS.daily.roiMultiplier, durationDays: POOLS.daily.durationDays },
+  weekly: { roi: POOLS.weekly.roiMultiplier, durationDays: POOLS.weekly.durationDays },
 }
 
 export async function POST(request: NextRequest) {
@@ -83,7 +85,7 @@ export async function POST(request: NextRequest) {
         currency: 'USDT',
         txHash: txHash.trim(),
         status: 'pending',
-        note: `Investment submitted for ${pool === 'daily' ? '24H' : 'Weekly'} Pool - Awaiting approval`,
+        note: `Investment submitted for ${pool === 'daily' ? '48H' : 'Weekly'} Pool - Awaiting approval`,
       },
     })
 
@@ -108,7 +110,7 @@ export async function POST(request: NextRequest) {
       investmentId: investment.id,
       amount: parsedAmount,
       pool,
-      message: `${session.name || session.email} submitted a $${parsedAmount} ${pool === 'daily' ? '24H' : 'Weekly'} Pool deposit`,
+      message: `${session.name || session.email} submitted a $${parsedAmount} ${pool === 'daily' ? '48H' : 'Weekly'} Pool deposit`,
     })
 
     return NextResponse.json({
