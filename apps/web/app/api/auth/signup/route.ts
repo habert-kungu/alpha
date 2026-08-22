@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createUser, createToken } from "@/lib/auth"
 import prisma from "@/lib/db"
+import { welcomeEmail } from "@/lib/mail"
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await createUser(email, password, name, telegram)
+    void welcomeEmail(user.email, user.name)
     const token = await createToken({
       userId: user.id,
       email: user.email,

@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@/lib/auth'
+import { getAdminUser } from '@/lib/auth'
+import { investmentDecisionEmail } from '@/lib/mail'
 import prisma from '@/lib/db'
 import { triggerNotification, CHANNELS, EVENTS } from '@/lib/pusher'
 
 export async function PATCH(request: NextRequest) {
   try {
-    const token = request.cookies.get('token')?.value
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const payload = await verifyToken(token)
-    if (!payload || payload.role !== 'admin') {
+    if (!(await getAdminUser(request))) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -28,6 +23,7 @@ export async function PATCH(request: NextRequest) {
 
     const investment = await prisma.investment.findUnique({
       where: { id: investmentId },
+      include: { user: { select: { email: true, name: true } } },
     })
 
     if (!investment) {
@@ -80,6 +76,7 @@ export async function PATCH(request: NextRequest) {
         cycleId: cycle.id,
         message: `Your ${updated.pool === 'daily' ? '24H' : 'Weekly'} Pool investment of $${updated.amount} has been approved!`,
       })
+      void investmentDecisionEmail(investment.user.email, { approved: true, amount: updated.amount, pool: updated.pool, targetValue, name: investment.user.name })
     } else if (action === 'reject') {
       await prisma.transaction.create({
         data: {
@@ -99,6 +96,7 @@ export async function PATCH(request: NextRequest) {
         pool: updated.pool,
         message: `Your investment of $${updated.amount} was not approved. Please contact support.`,
       })
+      void investmentDecisionEmail(investment.user.email, { approved: false, amount: updated.amount, pool: updated.pool, name: investment.user.name })
     }
 
     return NextResponse.json({ 

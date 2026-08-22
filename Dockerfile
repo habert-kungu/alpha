@@ -53,6 +53,8 @@ COPY --from=builder /app/apps/web/public ./apps/web/public
 # Baked initial DB (migrated + seeded) + entrypoint.
 COPY --from=builder /app/apps/web/prisma/seed.db /app/seed/prod.db
 COPY apps/web/docker-entrypoint.sh /app/docker-entrypoint.sh
+# Additive schema sync for volumes created by older images (see scripts/db-sync.mjs).
+COPY apps/web/scripts/db-sync.mjs /app/apps/web/scripts/db-sync.mjs
 
 RUN chmod +x /app/docker-entrypoint.sh \
   && useradd --create-home --uid 1001 appuser \

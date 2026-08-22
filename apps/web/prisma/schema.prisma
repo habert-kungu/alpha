@@ -21,12 +21,13 @@ model User {
   investments   Investment[]
   transactions  Transaction[]
   cycles        Cycle[]
+  resetTokens   PasswordResetToken[]
 }
 
 model Investment {
   id          String    @id @default(cuid())
   userId      String
-  user        User      @relation(fields: [userId], references: [id])
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   pool        String
   amount      Float
   txHash      String?
@@ -42,7 +43,7 @@ model Investment {
 model Transaction {
   id          String    @id @default(cuid())
   userId      String
-  user        User      @relation(fields: [userId], references: [id])
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   type        String
   amount      Float
   netAmount   Float?
@@ -58,9 +59,9 @@ model Transaction {
 model Cycle {
   id            String    @id @default(cuid())
   investmentId  String
-  investment    Investment @relation(fields: [investmentId], references: [id])
+  investment    Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
   userId        String
-  user          User      @relation(fields: [userId], references: [id])
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   startValue    Float
   currentValue  Float
   targetValue   Float
@@ -77,4 +78,17 @@ model Settings {
   value     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+/// Single-use, expiring token for the "forgot password" flow. Only a SHA-256
+/// hash of the token is stored; the raw token lives solely in the emailed link.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }

@@ -46,6 +46,16 @@ in the `Dockerfile` builder stage.
 | `JWT_SECRET`                   | **Yes**  | ≥16 chars. Auth throws in production if unset.     |
 | `DATABASE_URL`                 | preset   | `file:/data/prod.db` (on the volume). Leave as-is. |
 | `PUSHER_*` / `NEXT_PUBLIC_PUSHER_*` | No  | Real-time notifications. Unset = feature disabled. |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` / `SMTP_SECURE` | No | Outbound email (password reset, welcome, deposit approved/rejected, admin-created accounts). Unset `SMTP_HOST` = emails are printed to the container log instead. Any SMTP provider works (Brevo, Resend SMTP, Gmail app password, Mailgun…). |
+| `MAIL_FROM`                    | No       | Sender, e.g. `AlphaReserve <no-reply@alphareserve.net>`. Defaults to `no-reply@$DOMAIN`. |
+| `APP_URL`                      | No       | Public origin used in emailed links. Defaults to `https://$DOMAIN`. |
+| `ADMIN_EMAIL`                  | No       | Receives a notice for every new deposit request. |
+
+### Verifying email
+
+- **Admin panel → Communications** shows whether SMTP is configured, live-checks the connection, sends you a test email, and lets you message all investors / admins / one address with the branded template.
+- **From a shell** (uses `apps/web/.env`): `cd apps/web && npx tsx scripts/send-test-email.ts you@example.com`
+- **No credentials yet?** `npx tsx scripts/send-test-email.ts --ethereal` sends every template to a throwaway [Ethereal](https://ethereal.email) inbox and prints preview links, so you can check rendering before wiring a real provider.
 
 ## Updating / redeploying
 
@@ -104,6 +114,13 @@ cd tradefixx-clone
 cat > .env <<EOF
 DOMAIN=app.example.com
 JWT_SECRET=$(openssl rand -base64 32)
+# Email (recommended — enables "forgot password" and notifications):
+# SMTP_HOST=smtp-relay.brevo.com
+# SMTP_PORT=587
+# SMTP_USER=...
+# SMTP_PASS=...
+# MAIL_FROM="AlphaReserve <no-reply@alphareserve.net>"
+# ADMIN_EMAIL=you@example.com
 # Optional Pusher real-time notifications:
 # PUSHER_APP_ID=...
 # PUSHER_KEY=...

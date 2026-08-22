@@ -127,7 +127,7 @@ async function main() {
   console.log("User:  test@nextlevel.com / user123")
   console.log("\n🔗 URLs:")
   console.log("Login: http://localhost:3000/login")
-  console.log("Admin: http://localhost:3000/admin")
+  console.log("Admin: http://localhost:3000/app/admin")
 }
 
 main()

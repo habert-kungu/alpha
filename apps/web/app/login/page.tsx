@@ -10,6 +10,12 @@ export default function LoginPage() {
   const [password, setPassword] = React.useState("")
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState("")
+  const [notice, setNotice] = React.useState("")
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("reset") === "1") setNotice("Your password was updated. Sign in with your new password.")
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -76,6 +82,11 @@ export default function LoginPage() {
           <h1 className="text-xl font-bold text-foreground mb-1">Sign in</h1>
           <p className="text-muted-foreground text-sm mb-6">Enter your credentials</p>
 
+          {notice && !error && (
+            <div className="mb-4 rounded-lg border border-[var(--color-success)]/25 bg-[var(--bg-success)] p-3 text-xs text-foreground">
+              {notice}
+            </div>
+          )}
           {error && (
             <div className="mb-4 p-3 bg-[var(--bg-danger)] border border-destructive/25 rounded-lg text-destructive text-xs">
               {error}

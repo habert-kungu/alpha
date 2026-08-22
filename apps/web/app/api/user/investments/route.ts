@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@/lib/auth'
+import { getSessionUser } from '@/lib/auth'
+import { newDepositAdminEmail } from '@/lib/mail'
+import { triggerNotification, CHANNELS, EVENTS } from '@/lib/pusher'
 import prisma from '@/lib/db'
 
 const POOL_CONFIG = {
@@ -9,15 +11,11 @@ const POOL_CONFIG = {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.cookies.get('token')?.value
-    if (!token) {
+    const session = await getSessionUser(request)
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const payload = await verifyToken(token)
-    if (!payload) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const payload = { userId: session.id }
 
     const body = await request.json()
     const { amount, pool, txHash, network, notes } = body
@@ -84,6 +82,21 @@ export async function POST(request: NextRequest) {
         status: 'pending',
         note: `Investment submitted for ${pool === 'daily' ? '24H' : 'Weekly'} Pool - Awaiting approval`,
       },
+    })
+
+    void newDepositAdminEmail({
+      userEmail: session.email,
+      userName: session.name,
+      amount: parsedAmount,
+      pool,
+      txHash: txHash.trim(),
+      investmentId: investment.id,
+    })
+    void triggerNotification(CHANNELS.ADMIN, EVENTS.INVESTMENT_CREATED, {
+      investmentId: investment.id,
+      amount: parsedAmount,
+      pool,
+      message: `${session.name || session.email} submitted a $${parsedAmount} ${pool === 'daily' ? '24H' : 'Weekly'} Pool deposit`,
     })
 
     return NextResponse.json({

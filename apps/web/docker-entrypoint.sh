@@ -12,6 +12,8 @@ if [ -n "$DB_PATH" ]; then
     cp /app/seed/prod.db "$DB_PATH"
   else
     echo "→ Using existing database at $DB_PATH"
+    # Apply additive schema changes to a DB created by an older image.
+    node apps/web/scripts/db-sync.mjs
   fi
 fi
 
