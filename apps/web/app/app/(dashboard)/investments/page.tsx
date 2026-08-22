@@ -13,6 +13,9 @@ export default function InvestmentsPage() {
   const [selectedPlan, setSelectedPlan] = React.useState("weekly")
   const [network, setNetwork] = React.useState<DepositNetworkKey>("TRC20")
   const wallet = depositNetwork(network)
+  const labelCls = "mb-1.5 block text-xs font-medium text-foreground sm:text-sm"
+  const fieldCls =
+    "w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-[var(--color-success)] focus:outline-none focus:ring-1 focus:ring-[var(--color-success)]/50 sm:px-4 sm:py-3 sm:text-base"
   const [txHash, setTxHash] = React.useState("")
   const [notes, setNotes] = React.useState("")
   const [showConfirm, setShowConfirm] = React.useState(false)
@@ -97,7 +100,7 @@ export default function InvestmentsPage() {
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4">
         <button
           onClick={() => setSelectedPlan("daily")}
-          className={`rounded-lg border bg-card p-3 text-left transition-all hover:bg-secondary/50 sm:p-4 ${selectedPlan === "daily" ? "border-primary ring-2 ring-primary/40 bg-primary/5" : "border-border"}`}
+          className={`rounded-lg border bg-card p-3 text-left transition-all hover:bg-secondary/50 sm:p-4 ${selectedPlan === "daily" ? "border-[var(--color-success)] bg-[var(--bg-success)] ring-2 ring-[var(--color-success)]/35" : "border-border"}`}
         >
           <div className="mb-2 flex items-start justify-between">
             <div>
@@ -116,9 +119,9 @@ export default function InvestmentsPage() {
 
         <button
           onClick={() => setSelectedPlan("weekly")}
-          className={`relative rounded-lg border bg-card p-3 text-left transition-all hover:bg-secondary/50 sm:p-4 ${selectedPlan === "weekly" ? "border-primary ring-2 ring-primary/40 bg-primary/5" : "border-border"}`}
+          className={`relative rounded-lg border bg-card p-3 text-left transition-all hover:bg-secondary/50 sm:p-4 ${selectedPlan === "weekly" ? "border-[var(--color-success)] bg-[var(--bg-success)] ring-2 ring-[var(--color-success)]/35" : "border-border"}`}
         >
-          <div className="absolute -top-1.5 right-2 rounded bg-[oklch(0.21_0_0)] px-1.5 py-0.5 text-[9px] font-medium text-[oklch(1_0_180)] sm:right-3 sm:px-2 sm:text-[10px]">
+          <div className="absolute -top-1.5 right-2 rounded bg-[var(--color-success)] px-1.5 py-0.5 text-[9px] font-medium text-white sm:right-3 sm:px-2 sm:text-[10px]">
             Popular
           </div>
           <div className="mb-2 flex items-start justify-between">
@@ -138,183 +141,154 @@ export default function InvestmentsPage() {
       </div>
 
       {/* Deposit Form */}
-      <Card className="p-4 sm:p-6">
-        <h2 className="mb-4 text-base font-medium text-foreground sm:mb-6 sm:text-lg">
-          Make a Deposit
-        </h2>
+      <Card className="overflow-hidden">
+        <div className="border-b border-border px-4 py-3 sm:px-6 sm:py-4">
+          <h2 className="text-base font-medium text-foreground sm:text-lg">Make a Deposit</h2>
+          <p className="mt-0.5 text-[11px] text-muted-foreground sm:text-xs">
+            Choose the network, send the funds, then paste the transaction hash so we can confirm it.
+          </p>
+        </div>
 
-        <div className="space-y-4 sm:space-y-5">
-          {/* Wallet Address */}
-          <div>
-            <label className="mb-2 block text-xs font-medium text-foreground sm:text-sm">
-              Pay with
-            </label>
-            <div className="mb-3 grid grid-cols-2 gap-2">
-              {DEPOSIT_NETWORKS.map((n) => (
-                <button
-                  key={n.key}
-                  type="button"
-                  onClick={() => {
-                    setNetwork(n.key)
+        <div className="space-y-5 p-4 sm:p-6">
+          {/* Step 1 — amount + network */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+            <div>
+              <label className={labelCls}>Amount (USD)</label>
+              <div className="relative">
+                <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-muted-foreground sm:left-4">$</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={50}
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="500"
+                  className={`${fieldCls} pl-7 sm:pl-8`}
+                />
+              </div>
+              <p className="mt-1 text-[10px] text-muted-foreground">Minimum $50</p>
+            </div>
+
+            <div>
+              <label className={labelCls}>Network</label>
+              <div className="relative">
+                <select
+                  value={network}
+                  onChange={(e) => {
+                    setNetwork(e.target.value as DepositNetworkKey)
                     setCopiedAddress(false)
                   }}
-                  className={`rounded-lg border px-3 py-2.5 text-left transition-all ${
-                    network === n.key ? "border-primary bg-primary/5 ring-2 ring-primary/40" : "border-border bg-card hover:bg-secondary/50"
-                  }`}
+                  className={`${fieldCls} appearance-none pr-10`}
+                  aria-label="Deposit network"
                 >
-                  <div className="text-xs font-medium text-foreground sm:text-sm">{n.label}</div>
-                  <div className="text-[10px] text-muted-foreground">{n.chain}</div>
-                </button>
-              ))}
-            </div>
-            <label className="mb-2 block text-xs font-medium text-foreground sm:text-sm">
-              {wallet.asset} deposit address · {wallet.chain}
-            </label>
-            <div className="rounded-lg border border-border bg-secondary/30 p-2.5 sm:p-3.5">
-              <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
-                <code className="font-mono text-[10px] break-all text-foreground sm:text-xs" data-testid="deposit-address">
-                  {wallet.address}
-                </code>
-                <button
-                  type="button"
-                  onClick={copyAddress}
-                  className="flex shrink-0 items-center gap-1.5 rounded bg-[oklch(0.21_0_0)] px-2.5 py-1.5 text-[10px] font-medium text-[oklch(1_0_180)] transition-opacity hover:opacity-90 sm:gap-2 sm:px-3 sm:text-xs"
-                >
-                  {copiedAddress ? (
-                    <>
-                      <svg
-                        className="h-3 w-3 sm:h-4 sm:w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      Copied
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        className="h-3 w-3 sm:h-4 sm:w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <rect x="9" y="9" width="13" height="13" rx="2" />
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                      </svg>
-                      Copy
-                    </>
-                  )}
-                </button>
+                  {DEPOSIT_NETWORKS.map((n) => (
+                    <option key={n.key} value={n.key}>
+                      {n.label} · {n.chain}
+                    </option>
+                  ))}
+                </select>
+                <svg className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
               </div>
+              <p className="mt-1 text-[10px] text-muted-foreground">Send {wallet.asset} on {wallet.chain} only</p>
             </div>
           </div>
 
-          {/* Warning */}
-          <div className="rounded-lg border border-[oklch(0.6_0_0)/0.15] bg-[oklch(0.6_0_0)/0.08] p-3">
-            <p className="text-[10px] text-foreground sm:text-xs">
-              <span className="font-medium">Important:</span> {wallet.hint} Send the exact amount, then fill in the details below and submit.
+          {/* Step 2 — address */}
+          <div className="overflow-hidden rounded-xl border border-[var(--color-success)]/30 bg-[var(--bg-success)]">
+            <div className="flex items-center justify-between gap-2 border-b border-[var(--color-success)]/20 px-3 py-2 sm:px-4">
+              <div className="flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-success)] text-[10px] font-bold text-white">2</span>
+                <span className="text-xs font-medium text-foreground sm:text-sm">
+                  Send {wallet.asset} to this {wallet.chain} address
+                </span>
+              </div>
+              <span className="rounded-full bg-card px-2 py-0.5 text-[10px] font-semibold text-[var(--color-success)]">{wallet.label}</span>
+            </div>
+            <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:gap-3 sm:p-4">
+              <code className="min-w-0 flex-1 break-all rounded-lg bg-card px-3 py-2.5 font-mono text-[11px] text-foreground sm:text-xs" data-testid="deposit-address">
+                {wallet.address}
+              </code>
+              <button
+                type="button"
+                onClick={copyAddress}
+                className={`flex shrink-0 items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-medium transition-all ${
+                  copiedAddress ? "bg-card text-[var(--color-success)] ring-1 ring-[var(--color-success)]/40" : "bg-[var(--color-success)] text-white hover:opacity-90"
+                }`}
+              >
+                {copiedAddress ? (
+                  <>
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polyline points="20 6 9 17 4 12" /></svg>
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                    Copy address
+                  </>
+                )}
+              </button>
+            </div>
+            <p className="px-3 pb-3 text-[10px] text-muted-foreground sm:px-4 sm:text-[11px]">
+              <span className="font-medium text-foreground">Important:</span> {wallet.hint} Send the exact amount — deposits on any other network can't be recovered.
             </p>
           </div>
 
-          {/* Amount & Network */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-foreground sm:mb-2 sm:text-sm">
-                Amount (USD)
-              </label>
-              <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="e.g. 500"
-                className="w-full rounded-lg border border-border px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-[oklch(0.21_0_0)] focus:outline-none sm:px-4 sm:py-3 sm:text-base"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-foreground sm:mb-2 sm:text-sm">
-                Network
-              </label>
-              <div className="w-full rounded-lg border border-border bg-secondary/30 px-3 py-2.5 text-sm text-muted-foreground sm:px-4 sm:py-3 sm:text-base">
-                {wallet.label}
-              </div>
-            </div>
-          </div>
-
-          {/* Preview Return */}
+          {/* Expected return */}
           {amount && parseFloat(amount) > 0 && (
-            <div className="rounded-lg border border-[oklch(0.62_0.12_178)/20] bg-[oklch(0.62_0.12_178)/8] p-3 sm:p-4">
-              <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
-                <div>
-                  <div className="mb-1 font-mono text-[10px] text-muted-foreground uppercase sm:text-xs">
-                    Expected Return
-                  </div>
-                  <div className="text-lg font-bold text-[oklch(0.62_0.12_178)] sm:text-xl">
-                    ${calculatedReturn.toLocaleString()}
-                  </div>
-                </div>
-                <div className="text-left sm:text-right">
-                  <div className="mb-1 font-mono text-[10px] text-muted-foreground uppercase sm:text-xs">
-                    After 16.5% fee
-                  </div>
-                  <div className="text-sm font-semibold text-foreground sm:text-base">
-                    ${net.toLocaleString()} payout
-                  </div>
-                </div>
+            <div className="grid grid-cols-2 divide-x divide-border rounded-xl border border-border bg-secondary/30">
+              <div className="p-3 sm:p-4">
+                <div className="mb-1 font-mono text-[10px] uppercase text-muted-foreground">Expected return</div>
+                <div className="text-lg font-bold text-[var(--color-success)] sm:text-xl">${calculatedReturn.toLocaleString()}</div>
+                <div className="text-[10px] text-muted-foreground">{selectedPlan === "weekly" ? "8x · 7 days" : "6.4x · 24 hours"}</div>
+              </div>
+              <div className="p-3 sm:p-4">
+                <div className="mb-1 font-mono text-[10px] uppercase text-muted-foreground">Payout after 16.5% fee</div>
+                <div className="text-lg font-bold text-foreground sm:text-xl">${net.toLocaleString()}</div>
+                <div className="text-[10px] text-muted-foreground">Fee ${fee.toLocaleString()}</div>
               </div>
             </div>
           )}
 
-          {/* TX Hash */}
+          {/* Step 3 — proof */}
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground sm:mb-2 sm:text-sm">
-              Transaction Hash
-            </label>
+            <label className={labelCls}>Transaction hash</label>
             <input
               type="text"
               value={txHash}
               onChange={(e) => setTxHash(e.target.value)}
-              placeholder="Paste TX hash after sending"
-              className="w-full rounded-lg border border-border px-3 py-2.5 font-mono text-xs text-foreground placeholder:text-muted-foreground focus:border-[oklch(0.21_0_0)] focus:outline-none sm:px-4 sm:py-3 sm:text-sm"
+              placeholder={network === "BTC" ? "Paste the BTC transaction ID after sending" : "Paste the TRC20 transaction hash after sending"}
+              className={`${fieldCls} font-mono text-xs sm:text-sm`}
             />
           </div>
 
-          {/* Notes */}
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-foreground sm:mb-2 sm:text-sm">
-              Notes (optional)
-            </label>
+            <label className={labelCls}>Notes (optional)</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Message for admin..."
+              placeholder="Anything the admin should know…"
               rows={2}
-              className="w-full resize-none rounded-lg border border-border px-3 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-[oklch(0.21_0_0)] focus:outline-none sm:px-4 sm:py-3 sm:text-sm"
+              className={`${fieldCls} resize-none text-xs sm:text-sm`}
             />
           </div>
 
-          {/* Submit */}
           {submitSuccess && (
-            <div className="mb-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-center text-sm text-emerald-500">
-              Investment submitted successfully! Awaiting admin approval.
+            <div className="rounded-lg border border-[var(--color-success)]/30 bg-[var(--bg-success)] p-3 text-center text-sm text-[var(--color-success)]">
+              Deposit submitted — we'll email you as soon as it's confirmed.
             </div>
           )}
           {submitError && (
-            <div className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-center text-sm text-red-400">
-              {submitError}
-            </div>
+            <div className="rounded-lg border border-destructive/30 bg-[var(--bg-danger)] p-3 text-center text-sm text-destructive">{submitError}</div>
           )}
           <button
             type="button"
             onClick={() => setShowConfirm(true)}
             disabled={!amount || !txHash || submitting}
-            className="w-full rounded-lg bg-[oklch(0.62_0.12_178)] py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:py-4 sm:text-base"
+            className="w-full rounded-lg bg-[var(--color-success)] py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:py-3.5 sm:text-base"
           >
-            {submitting ? "Submitting..." : "Submit Investment"}
+            {submitting ? "Submitting…" : `Submit ${wallet.asset} deposit`}
           </button>
         </div>
       </Card>
@@ -330,7 +304,7 @@ export default function InvestmentsPage() {
             {
               step: "2",
               title: "Send Crypto",
-              desc: "Transfer USDT to wallet",
+              desc: "Send USDT (TRC20) or BTC to the address shown",
             },
             {
               step: "3",
@@ -339,7 +313,7 @@ export default function InvestmentsPage() {
             },
           ].map((item) => (
             <div key={item.step} className="flex items-center gap-3">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[oklch(0.21_0_0)] text-[10px] font-medium text-[oklch(1_0_180)] sm:h-8 sm:w-8 sm:text-sm">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-success)] text-[10px] font-medium text-white sm:h-8 sm:w-8 sm:text-sm">
                 {item.step}
               </div>
               <div>
@@ -382,8 +356,12 @@ export default function InvestmentsPage() {
                 <span className="font-medium text-foreground">${amount}</span>
               </div>
               <div className="flex justify-between border-b border-border py-2">
+                <span className="text-muted-foreground">Network</span>
+                <span className="font-medium text-foreground">{wallet.label}</span>
+              </div>
+              <div className="flex justify-between border-b border-border py-2">
                 <span className="text-muted-foreground">Expected Return</span>
-                <span className="font-bold text-[oklch(0.62_0.12_178)]">
+                <span className="font-bold text-[var(--color-success)]">
                   ${calculatedReturn.toLocaleString()}
                 </span>
               </div>
@@ -399,7 +377,7 @@ export default function InvestmentsPage() {
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="flex-1 rounded-lg bg-[oklch(0.62_0.12_178)] py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                className="flex-1 rounded-lg bg-[var(--color-success)] py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 {submitting ? "Submitting..." : "Confirm & Submit"}
               </button>
