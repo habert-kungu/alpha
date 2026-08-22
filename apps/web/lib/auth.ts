@@ -23,6 +23,8 @@ export interface JWTPayload {
   email: string
   role: string
   name?: string
+  /** User.tokenVersion at issue time; a mismatch means the session was revoked. */
+  tv?: number
   [key: string]: unknown
 }
 
@@ -82,6 +84,7 @@ export async function validateUser(email: string, password: string) {
     name: user.name,
     role: user.role,
     telegram: user.telegram,
+    tokenVersion: user.tokenVersion,
   }
 }
 // ---------------------------------------------------------------------------
@@ -89,7 +92,7 @@ export async function validateUser(email: string, password: string) {
 // ---------------------------------------------------------------------------
 
 import { createHash, randomBytes } from "node:crypto"
-import type { NextRequest } from "next/server"
+import type { NextRequest, NextResponse } from "next/server"
 
 export interface SessionUser {
   id: string
@@ -97,23 +100,74 @@ export interface SessionUser {
   name: string | null
   role: string
   telegram: string | null
+  tokenVersion: number
+}
+
+export const SESSION_COOKIE = "token"
+export const SESSION_MAX_AGE = 60 * 60 * 24 * 7 // 7 days
+
+/** Builds the JWT claims for a user, stamping the current tokenVersion. */
+export function sessionClaims(user: { id: string; email: string; role: string; name?: string | null; tokenVersion: number }): JWTPayload {
+  return { userId: user.id, email: user.email, role: user.role, name: user.name || undefined, tv: user.tokenVersion }
+}
+
+/** Issues a session cookie on the given response. */
+export async function setSessionCookie(
+  response: NextResponse,
+  user: { id: string; email: string; role: string; name?: string | null; tokenVersion: number }
+) {
+  response.cookies.set(SESSION_COOKIE, await createToken(sessionClaims(user)), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: SESSION_MAX_AGE,
+    path: "/",
+  })
+  return response
+}
+
+export function clearSessionCookie(response: NextResponse) {
+  response.cookies.set(SESSION_COOKIE, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 0,
+    path: "/",
+  })
+  return response
 }
 
 /**
- * Resolves the signed-in user from the request cookie and re-reads their role
- * from the database, so a role change (or a deleted account) takes effect
- * immediately rather than whenever the 7-day JWT happens to expire.
+ * Resolves the signed-in user from the request cookie and re-reads them from
+ * the database, so a role change, a deleted account, or a session revocation
+ * (tokenVersion bump) takes effect immediately rather than whenever the 7-day
+ * JWT happens to expire.
  */
 export async function getSessionUser(request: NextRequest): Promise<SessionUser | null> {
-  const token = request.cookies.get("token")?.value
+  const token = request.cookies.get(SESSION_COOKIE)?.value
   if (!token) return null
   const payload = await verifyToken(token)
   if (!payload?.userId) return null
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
-    select: { id: true, email: true, name: true, role: true, telegram: true },
+    select: { id: true, email: true, name: true, role: true, telegram: true, tokenVersion: true },
   })
+  if (!user) return null
+  // Tokens minted before this field existed carry no `tv`; treat as version 0.
+  if ((payload.tv ?? 0) !== user.tokenVersion) return null
   return user
+}
+
+/**
+ * Invalidates every session for a user by bumping tokenVersion. Returns the
+ * updated user so the caller can re-issue a cookie for the current device.
+ */
+export async function revokeAllSessions(userId: string) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: { tokenVersion: { increment: 1 } },
+    select: { id: true, email: true, name: true, role: true, telegram: true, tokenVersion: true },
+  })
 }
 
 export async function getAdminUser(request: NextRequest): Promise<SessionUser | null> {

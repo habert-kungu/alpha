@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/app/providers/auth-provider"
 import { NotificationProvider } from "@/app/providers/notification-provider"
 import { NotificationBell, ToastNotification } from "@/app/components/notification-bell"
@@ -147,8 +147,15 @@ function AppSwitcher({ current }: { current: "user" | "admin" }) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const { user } = useAuth()
+  const router = useRouter()
+  const { user, loading } = useAuth()
   const [mobileOpen, setMobileOpen] = React.useState(false)
+
+  // proxy.ts only checks the JWT signature; if the server says the session is
+  // gone (revoked, expired, deleted) send the user back to sign in.
+  React.useEffect(() => {
+    if (!loading && !user) router.replace(`/login?next=${encodeURIComponent(pathname)}`)
+  }, [loading, user, pathname, router])
 
   const isAdmin = user?.role === "admin"
   const allItems = NAV_GROUPS.flatMap((g) => g.items)

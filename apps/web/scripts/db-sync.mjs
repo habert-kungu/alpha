@@ -21,6 +21,11 @@ try {
     console.log("→ db-sync: added User.password")
   }
 
+  if (!(await hasColumn("User", "tokenVersion"))) {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN "tokenVersion" INTEGER NOT NULL DEFAULT 0`)
+    console.log("→ db-sync: added User.tokenVersion")
+  }
+
   if (!(await hasTable("PasswordResetToken"))) {
     await prisma.$executeRawUnsafe(`CREATE TABLE "PasswordResetToken" (
       "id" TEXT NOT NULL PRIMARY KEY,

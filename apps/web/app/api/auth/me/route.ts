@@ -1,36 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
-import { verifyToken } from "@/lib/auth"
-import prisma from "@/lib/db"
+import { getSessionUser, clearSessionCookie } from "@/lib/auth"
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get("token")?.value
-
-    if (!token) {
-      return NextResponse.json({ user: null }, { status: 401 })
-    }
-
-    const payload = await verifyToken(token)
-    if (!payload) {
-      return NextResponse.json({ user: null }, { status: 401 })
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        telegram: true,
-      },
-    })
-
+    const user = await getSessionUser(request)
     if (!user) {
-      return NextResponse.json({ user: null }, { status: 401 })
+      // Expired, revoked (tokenVersion bump) or orphaned — drop the cookie.
+      const res = NextResponse.json({ user: null }, { status: 401 })
+      return request.cookies.get("token") ? clearSessionCookie(res) : res
     }
-
-    return NextResponse.json({ user })
+    return NextResponse.json({ user: { id: user.id, email: user.email, name: user.name, role: user.role, telegram: user.telegram } })
   } catch {
     return NextResponse.json({ user: null }, { status: 401 })
   }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { consumePasswordResetToken, hashPassword, isStrongEnoughPassword } from "@/lib/auth"
+import { consumePasswordResetToken, hashPassword, isStrongEnoughPassword, clearSessionCookie } from "@/lib/auth"
 import { passwordChangedEmail } from "@/lib/mail"
 import prisma from "@/lib/db"
 
@@ -22,15 +22,14 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.user.update({
       where: { id: userId },
-      data: { password: await hashPassword(password) },
+      // tokenVersion bump signs the account out everywhere.
+      data: { password: await hashPassword(password), tokenVersion: { increment: 1 } },
       select: { email: true, name: true },
     })
-    await passwordChangedEmail(user.email, user.name)
+    void passwordChangedEmail(user.email, user.name)
 
-    // Clear any existing session cookie so the user signs in fresh.
-    const res = NextResponse.json({ success: true })
-    res.cookies.set("token", "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", maxAge: 0, path: "/" })
-    return res
+    // Clear any session cookie on this browser so the user signs in fresh.
+    return clearSessionCookie(NextResponse.json({ success: true }))
   } catch (error) {
     console.error("Reset password error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

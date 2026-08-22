@@ -49,6 +49,7 @@ export default function UsersPage() {
 
   const [showAdd, setShowAdd] = React.useState(false)
   const [removing, setRemoving] = React.useState<AdminUser | null>(null)
+  const [resetting, setResetting] = React.useState<AdminUser | null>(null)
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState("")
   const [notice, setNotice] = React.useState<React.ReactNode>(null)
@@ -121,6 +122,39 @@ export default function UsersPage() {
       setNotice(<>Removed <strong>{removing.name || removing.email}</strong> and all their records.</>)
       setRemoving(null)
       await afterMutation()
+    } catch {
+      setError("Network error. Please try again.")
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleResetPassword = async () => {
+    if (!resetting) return
+    setBusy(true)
+    setError("")
+    try {
+      const res = await fetch(`/api/admin/users/${resetting.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "resetPassword" }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setError(json.error || "Failed to reset password")
+        return
+      }
+      setNotice(
+        json.emailSent ? (
+          <>Password reset for <strong>{json.email}</strong>. They've been signed out everywhere and emailed a temporary password.</>
+        ) : (
+          <>
+            Password reset for <strong>{json.email}</strong> and all their sessions ended. Email isn't configured, so share this temporary password manually:{" "}
+            <code className="rounded bg-secondary px-1.5 py-0.5 font-mono text-[12px]">{json.tempPassword}</code>
+          </>
+        )
+      )
+      setResetting(null)
     } catch {
       setError("Network error. Please try again.")
     } finally {
@@ -241,7 +275,7 @@ export default function UsersPage() {
                     <td className="px-3 py-2.5 text-right text-xs font-medium tabular-nums text-[var(--color-success)]">${u.returns.toLocaleString()}</td>
                     <td className="px-3 py-2.5 text-xs text-muted-foreground">{formatDate(u.createdAt)}</td>
                     <td className="px-3 py-2.5">
-                      <div className="flex items-center justify-end gap-1.5">
+                      <div className="flex items-center justify-end gap-1.5 whitespace-nowrap">
                         <button
                           onClick={() => toggleRole(u)}
                           disabled={busy || isMe}
@@ -249,6 +283,17 @@ export default function UsersPage() {
                           className="rounded-md border border-border px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
                         >
                           {u.role === "admin" ? "Make user" : "Make admin"}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setError("")
+                            setResetting(u)
+                          }}
+                          disabled={busy}
+                          title="Set a temporary password and sign them out everywhere"
+                          className="rounded-md border border-border px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          Reset password
                         </button>
                         <button
                           onClick={() => {
@@ -320,6 +365,26 @@ export default function UsersPage() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Reset password */}
+      <Modal open={!!resetting} onClose={() => !busy && setResetting(null)} title="Reset password">
+        {resetting && (
+          <div className="space-y-4">
+            {error && <div className="rounded-lg border border-destructive/25 bg-[var(--bg-danger)] p-2.5 text-xs text-destructive">{error}</div>}
+            <p className="text-sm text-foreground">
+              Generate a temporary password for <strong>{resetting.name || resetting.email}</strong>? They'll be signed out on every device and emailed the new password{resetting.id === me?.id ? " — including you, on other devices" : ""}.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setResetting(null)} disabled={busy} className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground">
+                Cancel
+              </button>
+              <button onClick={handleResetPassword} disabled={busy} className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
+                {busy ? "Resetting…" : "Reset & email"}
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
 
       {/* Remove user */}

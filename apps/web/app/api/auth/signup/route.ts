@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createUser, createToken } from "@/lib/auth"
+import { createUser, setSessionCookie } from "@/lib/auth"
 import prisma from "@/lib/db"
 import { welcomeEmail } from "@/lib/mail"
 
@@ -40,12 +40,6 @@ export async function POST(request: NextRequest) {
 
     const user = await createUser(email, password, name, telegram)
     void welcomeEmail(user.email, user.name)
-    const token = await createToken({
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-      name: user.name || undefined,
-    })
 
     const response = NextResponse.json({
       user: {
@@ -57,15 +51,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    response.cookies.set("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: "/",
-    })
-
-    return response
+    return setSessionCookie(response, user)
   } catch (error) {
     console.error("Signup error:", error)
     return NextResponse.json(

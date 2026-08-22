@@ -157,6 +157,21 @@ ${button(appUrl("/login"), "Sign in")}`),
   })
 }
 
+export function passwordResetByAdminEmail(to: string, tempPassword: string, name?: string | null) {
+  return sendMail({
+    to,
+    subject: `Your ${APP_NAME} password was reset`,
+    html: layout("Your password was reset", `<p>${name ? `Hi ${escape(name)},` : "Hi,"}</p>
+<p>An administrator reset the password on your account and you've been signed out everywhere. Sign in with the temporary password below, then choose a new one from <strong>Profile → Security</strong>.</p>
+<p style="margin:16px 0;padding:12px 14px;background:#f4f5f7;border-radius:8px;font-family:ui-monospace,Menlo,monospace;font-size:14px">
+  <strong>Email:</strong> ${escape(to)}<br/>
+  <strong>Temporary password:</strong> ${escape(tempPassword)}
+</p>
+${button(appUrl("/login"), "Sign in")}
+<p style="color:#666">If you weren't expecting this, contact support.</p>`),
+  })
+}
+
 export function investmentDecisionEmail(
   to: string,
   opts: { approved: boolean; amount: number; pool: string; targetValue?: number; name?: string | null }

@@ -15,6 +15,8 @@ model User {
   telegram      String?
   walletAddress String?
   role          String         @default("user")
+  /// Bumped to invalidate every issued session (password change/reset, admin action).
+  tokenVersion  Int            @default(0)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 

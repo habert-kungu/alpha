@@ -131,6 +131,7 @@ export default function CommunicationsPage() {
             ["Deposit received", "to the user as soon as they submit a deposit (pending review)"],
             ["Deposit confirmed / not confirmed", "when you approve or reject a deposit"],
             ["Account details", "when you add a user here (temporary password)"],
+            ["Password reset by admin", "temporary password when you reset someone from Users"],
             ["New deposit request", `to ${data.adminEmail || "ADMIN_EMAIL"} for every submission`],
           ].map(([t, d]) => (
             <li key={t} className="flex gap-2 rounded-lg bg-secondary/40 px-3 py-2">

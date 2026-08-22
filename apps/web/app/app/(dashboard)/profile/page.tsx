@@ -67,6 +67,22 @@ export default function ProfilePage() {
   const [pw, setPw] = React.useState({ current: "", next: "", confirm: "" })
   const [pwBusy, setPwBusy] = React.useState(false)
   const [pwMsg, setPwMsg] = React.useState<{ tone: "ok" | "err"; text: string } | null>(null)
+  const [revoking, setRevoking] = React.useState(false)
+  const [revokeMsg, setRevokeMsg] = React.useState<{ tone: "ok" | "err"; text: string } | null>(null)
+
+  const signOutOthers = async () => {
+    setRevoking(true)
+    setRevokeMsg(null)
+    try {
+      const res = await fetch("/api/user/sessions", { method: "POST" })
+      if (!res.ok) throw new Error("Couldn't sign out other devices")
+      setRevokeMsg({ tone: "ok", text: "Every other device has been signed out. You're still signed in here." })
+    } catch (err) {
+      setRevokeMsg({ tone: "err", text: err instanceof Error ? err.message : "Something went wrong" })
+    } finally {
+      setRevoking(false)
+    }
+  }
 
   const startEdit = () => {
     if (!data) return
@@ -113,7 +129,7 @@ export default function ProfilePage() {
       if (!res.ok) throw new Error(json.error || "Couldn't change password")
       setPw({ current: "", next: "", confirm: "" })
       setPwOpen(false)
-      setPwMsg({ tone: "ok", text: "Password changed. A confirmation email is on its way." })
+      setPwMsg({ tone: "ok", text: "Password changed — all other devices were signed out. A confirmation email is on its way." })
     } catch (err) {
       setPwMsg({ tone: "err", text: err instanceof Error ? err.message : "Couldn't change password" })
     } finally {
@@ -290,6 +306,19 @@ export default function ProfilePage() {
                 </div>
               </form>
             )}
+          </div>
+
+          <div className="rounded-lg bg-secondary/50 p-3 sm:p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs font-medium text-foreground sm:text-sm">Other devices</div>
+                <div className="text-[10px] text-muted-foreground sm:text-xs">Signed in somewhere you don't recognise? End every session except this one.</div>
+              </div>
+              <button onClick={signOutOthers} disabled={revoking} className="text-xs font-medium text-foreground hover:underline disabled:opacity-50 sm:text-sm">
+                {revoking ? "Working…" : "Sign out other devices"}
+              </button>
+            </div>
+            {revokeMsg && <p className={`mt-2 text-xs ${revokeMsg.tone === "ok" ? "text-[var(--color-success)]" : "text-destructive"}`}>{revokeMsg.text}</p>}
           </div>
 
           <div className="flex items-center justify-between rounded-lg bg-secondary/50 p-3 sm:p-4">
