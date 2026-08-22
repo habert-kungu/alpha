@@ -76,19 +76,19 @@ export default function TransactionsPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
         <Card className="p-3 sm:p-4">
           <div className="text-[10px] sm:text-[11px] text-muted-foreground uppercase font-mono mb-1">Deposits</div>
-          <div className="text-sm sm:text-lg font-bold text-foreground">${stats.totalDeposits.toLocaleString()}</div>
+          <div className="text-sm sm:text-lg font-medium text-foreground">${stats.totalDeposits.toLocaleString()}</div>
         </Card>
         <Card className="p-3 sm:p-4">
           <div className="text-[10px] sm:text-[11px] text-muted-foreground uppercase font-mono mb-1">Returns</div>
-          <div className="text-sm sm:text-lg font-bold text-[var(--color-success)]">+${stats.totalReturns.toLocaleString()}</div>
+          <div className="text-sm sm:text-lg font-medium text-[var(--color-success)]">+${stats.totalReturns.toLocaleString()}</div>
         </Card>
         <Card className="p-3 sm:p-4">
           <div className="text-[10px] sm:text-[11px] text-muted-foreground uppercase font-mono mb-1">Withdrawals</div>
-          <div className="text-sm sm:text-lg font-bold text-foreground">-${stats.totalWithdrawals.toLocaleString()}</div>
+          <div className="text-sm sm:text-lg font-medium text-foreground">-${stats.totalWithdrawals.toLocaleString()}</div>
         </Card>
         <Card className="p-3 sm:p-4">
           <div className="text-[10px] sm:text-[11px] text-muted-foreground uppercase font-mono mb-1">Fees Paid</div>
-          <div className="text-sm sm:text-lg font-bold text-muted-foreground">-${stats.totalFees.toLocaleString()}</div>
+          <div className="text-sm sm:text-lg font-medium text-muted-foreground">-${stats.totalFees.toLocaleString()}</div>
         </Card>
       </div>
 
@@ -150,7 +150,7 @@ export default function TransactionsPage() {
             </div>
             <div className="flex items-center justify-between">
               <div>
-                <div className={`text-sm sm:text-base font-semibold ${
+                <div className={`text-sm sm:text-base font-medium ${
                   tx.type === 'return' ? 'text-[var(--color-success)]' : 'text-foreground'
                 }`}>
                   {tx.type === 'deposit' || tx.type === 'withdrawal' ? (
@@ -163,7 +163,7 @@ export default function TransactionsPage() {
               </div>
               <div className="text-right">
                 <div className="text-xs font-medium text-muted-foreground">Net</div>
-                <div className="text-sm font-semibold text-foreground">${tx.net.toLocaleString()}</div>
+                <div className="text-sm font-medium text-foreground">${tx.net.toLocaleString()}</div>
               </div>
             </div>
           </div>
@@ -220,7 +220,7 @@ export default function TransactionsPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className={`text-sm font-semibold ${
+                    <div className={`text-sm font-medium ${
                       tx.type === 'return' ? 'text-[var(--color-success)]' : 'text-foreground'
                     }`}>
                       {tx.type === 'deposit' || tx.type === 'withdrawal' ? (
@@ -232,7 +232,7 @@ export default function TransactionsPage() {
                     <div className="text-[10px] text-muted-foreground">{tx.currency}</div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="text-sm font-semibold text-foreground">${tx.net.toLocaleString()}</div>
+                    <div className="text-sm font-medium text-foreground">${tx.net.toLocaleString()}</div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="text-xs text-muted-foreground max-w-[180px] truncate">{tx.note}</div>
@@ -278,17 +278,17 @@ export default function TransactionsPage() {
               </div>
               <div className="flex justify-between py-2 border-b border-border">
                 <span className="text-xs text-muted-foreground">Amount</span>
-                <span className="text-xs font-semibold text-foreground">${selectedTx.amount.toLocaleString()} {selectedTx.currency}</span>
+                <span className="text-xs font-medium text-foreground">${selectedTx.amount.toLocaleString()} {selectedTx.currency}</span>
               </div>
               {selectedTx.type !== 'return' && (
                 <div className="flex justify-between py-2 border-b border-border">
                   <span className="text-xs text-muted-foreground">Fee (16.5%)</span>
-                  <span className="text-xs font-semibold text-muted-foreground">-${selectedTx.fee.toLocaleString()}</span>
+                  <span className="text-xs font-medium text-muted-foreground">-${selectedTx.fee.toLocaleString()}</span>
                 </div>
               )}
               <div className="flex justify-between py-2 border-b border-border">
                 <span className="text-xs text-muted-foreground">Net Received</span>
-                <span className="text-xs font-bold text-foreground">${selectedTx.net.toLocaleString()}</span>
+                <span className="text-xs font-medium text-foreground">${selectedTx.net.toLocaleString()}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">
                 <span className="text-xs text-muted-foreground">Status</span>

@@ -82,7 +82,7 @@ export function PriceChart({
       </div>
 
       <div className="absolute right-3 top-2 z-10 text-right">
-        <div className="font-mono text-sm font-semibold tabular-nums text-foreground">
+        <div className="font-mono text-sm font-medium tabular-nums text-foreground">
           {prefix}
           {fmtPrice(hovered ? hovered.v : last, digits)}
         </div>

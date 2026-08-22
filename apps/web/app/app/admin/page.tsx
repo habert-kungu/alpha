@@ -51,7 +51,7 @@ export default function AdminDashboardPage() {
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={ICONS[stat.icon]} /></svg>
               </div>
               <div className="mb-1 font-mono text-[11px] uppercase text-muted-foreground">{stat.label}</div>
-              <div className={`text-xl font-bold tabular-nums sm:text-2xl ${stat.color || "text-foreground"}`}>{stat.value}</div>
+              <div className={`text-xl font-medium tabular-nums sm:text-2xl ${stat.color || "text-foreground"}`}>{stat.value}</div>
             </Card>
           </Link>
         ))}
@@ -60,11 +60,11 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-2 gap-3 sm:gap-4">
         <Card className="p-4">
           <div className="mb-1 font-mono text-[11px] uppercase text-muted-foreground">Total Deposited</div>
-          <div className="text-xl font-bold tabular-nums text-foreground sm:text-2xl">${stats.totalDeposited.toLocaleString()}</div>
+          <div className="text-xl font-medium tabular-nums text-foreground sm:text-2xl">${stats.totalDeposited.toLocaleString()}</div>
         </Card>
         <Card className="p-4">
           <div className="mb-1 font-mono text-[11px] uppercase text-muted-foreground">Total Paid Out</div>
-          <div className="text-xl font-bold tabular-nums text-[var(--color-success)] sm:text-2xl">${stats.totalPaidOut.toLocaleString()}</div>
+          <div className="text-xl font-medium tabular-nums text-[var(--color-success)] sm:text-2xl">${stats.totalPaidOut.toLocaleString()}</div>
         </Card>
       </div>
 

@@ -184,7 +184,7 @@ export default function DepositsPage() {
               
               <div className="flex items-center justify-between sm:justify-end gap-4">
                 <div className="text-right">
-                  <div className="text-base font-bold text-foreground">${deposit.amount.toLocaleString()}</div>
+                  <div className="text-base font-medium text-foreground">${deposit.amount.toLocaleString()}</div>
                   <div className="text-[10px] text-muted-foreground">{deposit.pool === 'daily' ? '48H Pool' : 'Weekly Pool'} • {deposit.roi}x • {deposit.network === 'BTC' ? 'BTC' : 'USDT TRC20'} • {formatDate(deposit.createdAt)}</div>
                 </div>
                 

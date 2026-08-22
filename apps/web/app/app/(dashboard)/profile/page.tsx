@@ -247,7 +247,7 @@ export default function ProfilePage() {
             { label: "Completed", value: data.stats.completedCycles },
           ].map((s) => (
             <div key={s.label} className="px-4 py-3 text-center sm:py-4">
-              <div className={`text-base font-bold tabular-nums sm:text-lg ${s.cls || "text-foreground"}`}>{s.value}</div>
+              <div className={`text-base font-medium tabular-nums sm:text-lg ${s.cls || "text-foreground"}`}>{s.value}</div>
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.label}</div>
             </div>
           ))}

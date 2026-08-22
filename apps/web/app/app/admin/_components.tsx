@@ -20,7 +20,7 @@ export function StatGrid({ items }: { items: { label: string; value: React.React
     <div className={`grid gap-3 ${items.length === 4 ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-3"}`}>
       {items.map((s) => (
         <Card key={s.label} className="p-3 text-center">
-          <div className={`text-lg font-bold tabular-nums ${s.className || "text-foreground"}`}>{s.value}</div>
+          <div className={`text-lg font-medium tabular-nums ${s.className || "text-foreground"}`}>{s.value}</div>
           <div className="text-[10px] text-muted-foreground">{s.label}</div>
         </Card>
       ))}

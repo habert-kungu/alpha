@@ -293,7 +293,7 @@ export default function InvestmentsPage() {
             )}
 
             <div className="rounded-lg bg-secondary/50 p-3 text-xs">
-              <div className="flex justify-between py-0.5"><span className="text-muted-foreground">Target return</span><span className="font-semibold tabular-nums text-[var(--color-success)]">${targetPreview.toLocaleString()}</span></div>
+              <div className="flex justify-between py-0.5"><span className="text-muted-foreground">Target return</span><span className="font-medium tabular-nums text-[var(--color-success)]">${targetPreview.toLocaleString()}</span></div>
               <div className="flex justify-between py-0.5"><span className="text-muted-foreground">Client will see</span><span className="tabular-nums text-foreground">{draft.pool === "daily" ? "48H" : "Weekly"} Pool · {roiNum}x{draft.status === "active" ? ` · ${progressNum}% complete` : draft.status === "completed" ? " · completed, $" + targetPreview.toLocaleString() + " paid" : ` · ${draft.status}`}</span></div>
               {draft.status === "completed" && editing.status !== "completed" && (
                 <p className="mt-2 text-[11px] text-[var(--color-warning)]">Marking completed records a ${targetPreview.toLocaleString()} return transaction and emails the client. This can't be undone from here.</p>

@@ -26,7 +26,7 @@ function StatCard({ label, value, icon, change, positive, index = 0 }: { label: 
         )}
       </div>
       <div className="text-[11px] sm:text-[12px] text-muted-foreground mb-1 font-medium">{label}</div>
-      <div className="text-lg sm:text-xl font-semibold text-foreground">{value}</div>
+      <div className="text-lg sm:text-xl font-medium tabular-nums text-foreground">{value}</div>
     </Card>
   )
 }
@@ -233,7 +233,7 @@ export default function DashboardPage() {
                     <h2 className="text-base sm:text-lg font-semibold text-foreground">Cycle Progress</h2>
                   </div>
                   <div className="text-right sm:ml-4">
-                    <div className="text-2xl sm:text-3xl font-bold text-foreground">${Math.round(activeCycle.currentValue).toLocaleString()}</div>
+                    <div className="text-2xl sm:text-3xl font-medium text-foreground">${Math.round(activeCycle.currentValue).toLocaleString()}</div>
                     <div className="text-[10px] sm:text-xs text-muted-foreground">of ${Math.round(activeCycle.targetValue).toLocaleString()}</div>
                   </div>
                 </div>
@@ -428,17 +428,17 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-3 sm:gap-6">
                   <div>
                     <div className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-mono mb-0.5">Current</div>
-                    <div className="text-base sm:text-xl font-bold text-foreground">${Math.round(activeCycle.currentValue).toLocaleString()}</div>
+                    <div className="text-base sm:text-xl font-medium text-foreground">${Math.round(activeCycle.currentValue).toLocaleString()}</div>
                   </div>
                   <div className="w-px h-6 sm:h-10 bg-border" />
                   <div>
                     <div className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-mono mb-0.5">Profit</div>
-                    <div className="text-base sm:text-xl font-bold text-[oklch(0.62_0.12_178)]">+${Math.round(activeCycle.currentValue - activeCycle.startValue).toLocaleString()}</div>
+                    <div className="text-base sm:text-xl font-medium text-[oklch(0.62_0.12_178)]">+${Math.round(activeCycle.currentValue - activeCycle.startValue).toLocaleString()}</div>
                   </div>
                 </div>
                 <div className="text-left sm:text-right">
                   <div className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-mono mb-0.5">Payout</div>
-                  <div className="text-base sm:text-xl font-bold text-foreground">${Math.round(activeCycle.targetValue).toLocaleString()}</div>
+                  <div className="text-base sm:text-xl font-medium text-foreground">${Math.round(activeCycle.targetValue).toLocaleString()}</div>
                 </div>
               </div>
             )}

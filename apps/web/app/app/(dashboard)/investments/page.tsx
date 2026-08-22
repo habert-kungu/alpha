@@ -239,7 +239,7 @@ export default function InvestmentsPage() {
             <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-secondary/30 p-3 sm:p-4">
               <div>
                 <div className="mb-1 font-mono text-[10px] uppercase text-muted-foreground">Expected return</div>
-                <div className="text-lg font-bold text-[var(--color-success)] sm:text-xl">${calculatedReturn.toLocaleString()}</div>
+                <div className="text-lg font-medium text-[var(--color-success)] sm:text-xl">${calculatedReturn.toLocaleString()}</div>
               </div>
               <div className="text-right text-[11px] text-muted-foreground">
                 {selectedPlan === "weekly" ? "10x · paid after 7 days" : "10x · paid within 48 hours"}
