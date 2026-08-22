@@ -334,7 +334,7 @@ export default function DashboardPage() {
                   >
                     {/* Grid lines */}
                     {[40, 80, 120, 160].map((y) => (
-                      <line key={y} x1="0" y1={y} x2="300" y2={y} stroke="var(--chart-grid)" strokeWidth="1" />
+                      <line key={y} x1="0" y1={y} x2="300" y2={y} stroke="var(--chart-grid)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
                     ))}
 
                     <defs>
@@ -345,7 +345,7 @@ export default function DashboardPage() {
                     </defs>
 
                     {/* Entry reference line (horizontal at the start value) */}
-                    <line x1="0" y1={yFor(startValue)} x2="300" y2={yFor(startValue)} stroke="var(--chart-grid)" strokeWidth="1" strokeDasharray="2,3" />
+                    <line x1="0" y1={yFor(startValue)} x2="300" y2={yFor(startValue)} stroke="var(--chart-grid)" strokeWidth="1" strokeDasharray="3,4" vectorEffect="non-scaling-stroke" />
 
                     {/* Realized area fill (start -> now) */}
                     {chartData.length > 0 && (
@@ -363,7 +363,8 @@ export default function DashboardPage() {
                         d={chartData.map((d, i) => `${i === 0 ? 'M' : 'L'} ${xForIndex(i).toFixed(2)} ${yFor(d).toFixed(2)}`).join(' ')}
                         fill="none"
                         stroke="var(--chart-accent)"
-                        strokeWidth="2"
+                        strokeWidth="1.5"
+                        vectorEffect="non-scaling-stroke"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       />
