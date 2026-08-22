@@ -75,8 +75,6 @@ export default function InvestmentsPage() {
   const calculatedReturn = amount
     ? Math.round(parseFloat(amount) * POOLS[selectedPlan === "weekly" ? "weekly" : "daily"].roiMultiplier)
     : 0
-  const fee = amount ? Math.round(parseFloat(amount) * 0.165) : 0
-  const net = amount ? parseFloat(amount) - fee : 0
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -238,16 +236,13 @@ export default function InvestmentsPage() {
 
           {/* Expected return */}
           {amount && parseFloat(amount) > 0 && (
-            <div className="grid grid-cols-2 divide-x divide-border rounded-xl border border-border bg-secondary/30">
-              <div className="p-3 sm:p-4">
+            <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-secondary/30 p-3 sm:p-4">
+              <div>
                 <div className="mb-1 font-mono text-[10px] uppercase text-muted-foreground">Expected return</div>
                 <div className="text-lg font-bold text-[var(--color-success)] sm:text-xl">${calculatedReturn.toLocaleString()}</div>
-                <div className="text-[10px] text-muted-foreground">{selectedPlan === "weekly" ? "10x · 7 days" : "10x · 48 hours"}</div>
               </div>
-              <div className="p-3 sm:p-4">
-                <div className="mb-1 font-mono text-[10px] uppercase text-muted-foreground">Payout after 16.5% fee</div>
-                <div className="text-lg font-bold text-foreground sm:text-xl">${net.toLocaleString()}</div>
-                <div className="text-[10px] text-muted-foreground">Fee ${fee.toLocaleString()}</div>
+              <div className="text-right text-[11px] text-muted-foreground">
+                {selectedPlan === "weekly" ? "10x · paid after 7 days" : "10x · paid within 48 hours"}
               </div>
             </div>
           )}
