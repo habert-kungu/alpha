@@ -26,6 +26,11 @@ try {
     console.log("→ db-sync: added User.tokenVersion")
   }
 
+  if (!(await hasColumn("Cycle", "progressAt"))) {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "Cycle" ADD COLUMN "progressAt" DATETIME`)
+    console.log("→ db-sync: added Cycle.progressAt")
+  }
+
   if (!(await hasTable("PasswordResetToken"))) {
     await prisma.$executeRawUnsafe(`CREATE TABLE "PasswordResetToken" (
       "id" TEXT NOT NULL PRIMARY KEY,

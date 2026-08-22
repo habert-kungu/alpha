@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
         where,
         include: {
           user: { select: { id: true, email: true, name: true, telegram: true } },
-          cycles: { orderBy: { createdAt: 'desc' }, take: 1, select: { startValue: true, currentValue: true, targetValue: true, progress: true, status: true, createdAt: true } },
+          cycles: { orderBy: { createdAt: 'desc' }, take: 1, select: { startValue: true, currentValue: true, targetValue: true, progress: true, status: true, createdAt: true, progressAt: true } },
         },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,

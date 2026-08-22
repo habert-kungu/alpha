@@ -147,7 +147,9 @@ export default function DashboardPage() {
   const [timePeriod, setTimePeriod] = React.useState(60)
   const [hoveredPoint, setHoveredPoint] = React.useState<{x: number; y: number; value: number; time: string} | null>(null)
 
-  const activeCycle = stats?.activeCycles?.[0]
+  const [selectedCycleId, setSelectedCycleId] = React.useState<string | null>(null)
+  const activeCycles = React.useMemo(() => stats?.activeCycles ?? [], [stats])
+  const activeCycle = activeCycles.find((c) => c.id === selectedCycleId) ?? activeCycles[0]
 
   const hasActiveCycle = !!activeCycle
 
@@ -244,6 +246,21 @@ export default function DashboardPage() {
         {/* Main Content */}
         <div className="lg:col-span-8 space-y-6">
           {/* Active Cycle */}
+          {activeCycles.length > 1 && (
+            <div className="flex flex-wrap gap-1.5">
+              {activeCycles.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setSelectedCycleId(c.id)}
+                  className={`rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+                    c.id === activeCycle?.id ? "bg-foreground text-background" : "bg-secondary text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {c.pool === 'daily' ? '48H' : 'Weekly'} · ${Math.round(c.startValue).toLocaleString()} · {Math.round(c.progress)}%
+                </button>
+              ))}
+            </div>
+          )}
           {activeCycle && (
             <Card className="p-4 sm:p-6 overflow-hidden relative animate-fade-up" style={{ animationDelay: "120ms" }}>
               <div className="absolute inset-0 bg-gradient-to-r from-[oklch(0.62_0.12_178)/5] via-transparent to-[oklch(0.62_0.12_178)/10]" />

@@ -68,6 +68,9 @@ model Cycle {
   currentValue  Float
   targetValue   Float
   progress      Float     @default(0)
+  /// When `progress` was last set (by approval or an admin adjustment). Time-based
+  /// progression continues from this baseline. Null = from createdAt.
+  progressAt    DateTime?
   status        String    @default("active")
   completedAt   DateTime?
   createdAt     DateTime  @default(now())

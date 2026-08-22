@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminUser } from '@/lib/auth'
 import { investmentDecisionEmail, cycleCompletedEmail } from '@/lib/mail'
-import { POOLS } from '@/lib/trading'
+import { POOLS, effectiveCycle } from '@/lib/trading'
 import prisma from '@/lib/db'
 import { triggerNotification, CHANNELS, EVENTS } from '@/lib/pusher'
 
@@ -152,9 +152,9 @@ async function updateInvestment(investmentId: string, body: Record<string, unkno
     currentValue = amount + (targetValue - amount) * (pct / 100)
   }
   if (currentValue === undefined && existing) {
-    // Keep the same % progress when principal/target change.
-    const oldRange = existing.targetValue - existing.startValue || 1
-    const pct = Math.max(0, Math.min(1, (existing.currentValue - existing.startValue) / oldRange))
+    // Keep the same live % when principal/target change (the clock restarts
+    // from this baseline, so use the effective position, not the stored one).
+    const pct = effectiveCycle(existing, investment.pool).progress / 100
     currentValue = amount + (targetValue - amount) * pct
   }
   if (currentValue === undefined) currentValue = amount
@@ -175,6 +175,7 @@ async function updateInvestment(investmentId: string, body: Record<string, unkno
       currentValue: status === 'completed' ? targetValue : currentValue,
       targetValue,
       progress: status === 'completed' ? 100 : progress,
+      progressAt: new Date(),
       status: status === 'completed' ? 'completed' : status === 'active' ? 'active' : existing?.status ?? 'active',
       completedAt: status === 'completed' ? existing?.completedAt ?? new Date() : null,
     }
