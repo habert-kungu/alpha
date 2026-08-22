@@ -99,6 +99,16 @@ const TIME_PERIODS = [
   { label: '4H', value: 240 },
 ]
 
+// Live tick cadence per timeframe (ms). Shorter views tick faster, like a
+// 1-minute chart versus a 4-hour one.
+const TICK_MS_BY_PERIOD: Record<number, number> = {
+  1: 600,
+  5: 800,
+  15: 1000,
+  60: 1300,
+  240: 1800,
+}
+
 // How many points to render per selected timeframe (denser = longer range).
 const POINTS_BY_PERIOD: Record<number, number> = {
   1: 24,
@@ -158,15 +168,67 @@ export default function DashboardPage() {
 
   const startValue = activeCycle?.startValue ?? 0
   const targetValue = activeCycle?.targetValue ?? 0
-  const currentDisplayValue = activeCycle?.currentValue || activeCycle?.startValue || 0
+  const serverValue = activeCycle?.currentValue || activeCycle?.startValue || 0
   const progress = Math.min(100, Math.max(0, activeCycle?.progress || 0))
 
-  // Realized path from start -> current. Memoized + deterministic so it stays
-  // stable across re-renders (hover, tooltip) and never flickers.
-  const chartData = React.useMemo(
-    () => (hasActiveCycle ? buildRealizedPath(startValue, currentDisplayValue, pointsForPeriod, targetValue, `${activeCycle?.id}:${timePeriod}`) : []),
-    [hasActiveCycle, startValue, currentDisplayValue, pointsForPeriod, targetValue, activeCycle?.id, timePeriod]
-  )
+  // ---- Live ticking chart ------------------------------------------------
+  // History is seeded from the synthetic path, then a new tick is appended
+  // every TICK_MS (sliding window) so the chart moves continuously like a
+  // live price feed. Ticks wander around an "anchor" that drifts along the
+  // cycle's time-based progression between server refreshes.
+  const [chartData, setChartData] = React.useState<number[]>([])
+  const [liveValue, setLiveValue] = React.useState(0)
+  const fetchedAtRef = React.useRef(Date.now())
+  const walkRef = React.useRef({ walk: 0, momentum: 0 })
+  const cycleKey = `${activeCycle?.id ?? "none"}:${timePeriod}`
+
+  // Server refresh: re-anchor the clock (don't reset the history).
+  React.useEffect(() => {
+    fetchedAtRef.current = Date.now()
+  }, [serverValue, progress])
+
+  // New cycle or timeframe: rebuild history.
+  React.useEffect(() => {
+    if (!hasActiveCycle) {
+      setChartData([])
+      setLiveValue(0)
+      return
+    }
+    const seed = buildRealizedPath(startValue, serverValue, pointsForPeriod, targetValue, cycleKey)
+    setChartData(seed)
+    setLiveValue(seed[seed.length - 1] ?? serverValue)
+    walkRef.current = { walk: 0, momentum: 0 }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasActiveCycle, cycleKey, pointsForPeriod])
+
+  React.useEffect(() => {
+    if (!hasActiveCycle || !activeCycle) return
+    const durationMs = (activeCycle.pool === "daily" ? 2 : 7) * 24 * 60 * 60 * 1000
+    const ratePerMs = 100 / durationMs
+    const tickMs = TICK_MS_BY_PERIOD[timePeriod] ?? 1000
+    const id = setInterval(() => {
+      const elapsed = Date.now() - fetchedAtRef.current
+      const liveProgress = Math.min(100, progress + elapsed * ratePerMs)
+      const anchor = startValue + (targetValue - startValue) * (liveProgress / 100)
+      const level = Math.max(1, anchor)
+      // Per-tick volatility ~0.25% of price, a touch more as the cycle matures.
+      const vol = level * (0.0025 + 0.004 * (liveProgress / 100))
+      const st = walkRef.current
+      st.momentum = st.momentum * 0.8 + (Math.random() - 0.5) * vol * 1.4
+      st.walk = (st.walk + st.momentum + (Math.random() - 0.5) * vol) * 0.96
+      const next = Math.round(Math.max(startValue * 0.93, Math.min(targetValue, anchor + st.walk)) * 100) / 100
+      setChartData((prev) => (prev.length ? [...prev.slice(1), next] : prev))
+      setLiveValue(next)
+    }, tickMs)
+    return () => clearInterval(id)
+  }, [hasActiveCycle, activeCycle, timePeriod, progress, startValue, targetValue])
+
+  const currentDisplayValue = liveValue || serverValue
+  const prevValueRef = React.useRef(currentDisplayValue)
+  const tickUp = currentDisplayValue >= prevValueRef.current
+  React.useEffect(() => {
+    prevValueRef.current = currentDisplayValue
+  }, [currentDisplayValue])
 
   // Y-domain fits the realized ticks + the entry line (NOT the far-away target),
   // so the price volatility fills the vertical space like a real market chart.
@@ -279,7 +341,7 @@ export default function DashboardPage() {
                     <h2 className="text-base sm:text-lg font-semibold text-foreground">Cycle Progress</h2>
                   </div>
                   <div className="text-right sm:ml-4">
-                    <div className="text-2xl sm:text-3xl font-medium text-foreground">${Math.round(activeCycle.currentValue).toLocaleString()}</div>
+                    <div className="text-2xl sm:text-3xl font-medium tabular-nums text-foreground">${Math.round(currentDisplayValue).toLocaleString()}</div>
                     <div className="text-[10px] sm:text-xs text-muted-foreground">of ${Math.round(activeCycle.targetValue).toLocaleString()}</div>
                   </div>
                 </div>
@@ -444,18 +506,18 @@ export default function DashboardPage() {
                     })}
                   </svg>
 
-                  {/* Current price marker dot at the right edge (HTML overlay) */}
-                  <div
-                    className="pointer-events-none absolute right-0 h-2.5 w-2.5 -translate-y-1/2 translate-x-1/2 rounded-full bg-[var(--chart-accent)] ring-2 ring-card"
-                    style={{ top: `${currentTopPct}%` }}
-                  />
+                  {/* Current price marker: pulsing dot at the right edge (HTML overlay) */}
+                  <div className="pointer-events-none absolute right-0 -translate-y-1/2 translate-x-1/2" style={{ top: `${currentTopPct}%`, transition: "top 300ms ease-out" }}>
+                    <span className="absolute inset-0 -m-1.5 animate-ping rounded-full bg-[var(--chart-accent)] opacity-40" />
+                    <span className="relative block h-2.5 w-2.5 rounded-full bg-[var(--chart-accent)] ring-2 ring-card" />
+                  </div>
 
-                  {/* Deriv-style right-edge price pill at the current value */}
+                  {/* Deriv-style right-edge price pill at the live value */}
                   <div
-                    className="pointer-events-none absolute right-0 -translate-y-1/2 rounded bg-[var(--chart-accent)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-white shadow-sm"
-                    style={{ top: `${currentTopPct}%` }}
+                    className={`pointer-events-none absolute right-0 -translate-y-1/2 rounded px-1.5 py-0.5 font-mono text-[10px] font-semibold text-white shadow-sm tabular-nums ${tickUp ? "bg-[var(--color-success)]" : "bg-[var(--destructive)]"}`}
+                    style={{ top: `${currentTopPct}%`, transition: "top 300ms ease-out, background-color 200ms" }}
                   >
-                    ${Math.round(currentDisplayValue).toLocaleString()}
+                    ${currentDisplayValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
 
                   {/* Entry tag on the reference line */}
@@ -480,12 +542,12 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-3 sm:gap-6">
                   <div>
                     <div className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-mono mb-0.5">Current</div>
-                    <div className="text-base sm:text-xl font-medium text-foreground">${Math.round(activeCycle.currentValue).toLocaleString()}</div>
+                    <div className="text-base sm:text-xl font-medium tabular-nums text-foreground">${Math.round(currentDisplayValue).toLocaleString()}</div>
                   </div>
                   <div className="w-px h-6 sm:h-10 bg-border" />
                   <div>
                     <div className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-mono mb-0.5">Profit</div>
-                    <div className="text-base sm:text-xl font-medium text-[oklch(0.62_0.12_178)]">+${Math.round(activeCycle.currentValue - activeCycle.startValue).toLocaleString()}</div>
+                    <div className={`text-base sm:text-xl font-medium tabular-nums ${currentDisplayValue >= activeCycle.startValue ? "text-[var(--color-success)]" : "text-destructive"}`}>{currentDisplayValue >= activeCycle.startValue ? "+" : "-"}${Math.abs(Math.round(currentDisplayValue - activeCycle.startValue)).toLocaleString()}</div>
                   </div>
                 </div>
                 <div className="text-left sm:text-right">
