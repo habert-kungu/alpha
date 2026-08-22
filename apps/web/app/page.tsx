@@ -441,9 +441,9 @@ function PoolStats() {
           {stats.map((stat, i) => (
             <div
               key={i}
-              className={`relative border border-white/10 bg-card/80 p-4 backdrop-blur-xl transition-all hover:bg-card/90 ${stat.hero ? "col-span-2 lg:col-span-2" : ""}`}
+              className={`relative border border-white/10 bg-card/80 p-4 backdrop-blur-xl transition-all hover:bg-card/90 ${stat.hero ? "col-span-2 lg:col-span-2" : ""} ${i === stats.length - 1 ? "col-span-2 sm:col-span-1" : ""}`}
             >
-              <div className="absolute top-2 right-2">
+              <div className="absolute top-2 right-2 hidden md:block">
                 <span className="font-mono text-[9px] text-muted-foreground uppercase">
                   Status: Nominal
                 </span>
@@ -476,7 +476,7 @@ function PoolStats() {
                 {stat.trend}
               </div>
 
-              <div className="absolute right-1 bottom-1">
+              <div className="absolute right-1 bottom-1 hidden md:block">
                 <span className="font-mono text-[8px] text-muted-foreground/50">
                   Updated: {lastUpdated}
                 </span>
@@ -492,51 +492,51 @@ function PoolStats() {
 function Counter({ value, prefix }: { value: number; prefix: string }) {
   const ref = React.useRef<HTMLDivElement>(null)
   const hasAnimated = React.useRef(false)
-  const [displayValue, setDisplayValue] = React.useState("0")
+  const isDecimal = !Number.isInteger(value)
+  const format = (v: number) => (isDecimal ? v.toFixed(1) : Math.floor(v).toLocaleString())
+  const [displayValue, setDisplayValue] = React.useState(() => format(value))
 
   React.useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    if (typeof IntersectionObserver === "undefined") return // SSR / old browsers: final value stays visible
+
+    const run = () => {
+      if (hasAnimated.current) return
+      hasAnimated.current = true
+      const tl = gsap.timeline()
+      tl.fromTo(el, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }).to(
+        {},
+        {
+          duration: 1.6,
+          ease: "power2.out",
+          onUpdate: function () {
+            setDisplayValue(format(value * this.progress()))
+          },
+          onComplete: () => setDisplayValue(format(value)),
+        },
+        "<"
+      )
+    }
+
+    // The element keeps its real size (no scale-0), so the observer fires
+    // reliably; threshold 0 catches partially visible cards on small screens.
     const observer = new IntersectionObserver(
       (entries) => {
-        const entry = entries[0]
-        if (entry?.isIntersecting && !hasAnimated.current) {
-          hasAnimated.current = true
-
-          const tl = gsap.timeline()
-          const isDecimal = !Number.isInteger(value)
-
-          tl.fromTo(
-            ref.current,
-            { scale: 0.8, opacity: 0 },
-            { scale: 1, opacity: 1, duration: 0.4, ease: "back.out(1.7)" }
-          ).to(
-            {},
-            {
-              duration: 2,
-              onUpdate: function () {
-                const progress = this.progress()
-                const currentVal = value * progress
-                setDisplayValue(
-                  isDecimal
-                    ? currentVal.toFixed(1)
-                    : Math.floor(currentVal).toLocaleString()
-                )
-              },
-              ease: "power2.out",
-            }
-          )
+        if (entries.some((e) => e.isIntersecting)) {
+          run()
+          observer.disconnect()
         }
       },
-      { threshold: 0.3 }
+      { threshold: 0, rootMargin: "0px 0px -10% 0px" }
     )
-    if (ref.current) observer.observe(ref.current)
+    observer.observe(el)
     return () => observer.disconnect()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value])
 
   return (
-    <div
-      ref={ref}
-      className="scale-0 font-mono text-3xl leading-tight font-medium tabular-nums text-primary md:text-4xl"
-    >
+    <div ref={ref} className="font-mono text-3xl leading-tight font-medium tabular-nums text-primary md:text-4xl">
       {prefix}
       {displayValue}
     </div>

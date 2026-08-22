@@ -2,8 +2,77 @@ import { NextRequest, NextResponse } from "next/server"
 import { getAdminUser, generateTempPassword, hashPassword, isStrongEnoughPassword } from "@/lib/auth"
 import { passwordResetByAdminEmail } from "@/lib/mail"
 import prisma from "@/lib/db"
+import { effectiveCycle } from "@/lib/trading"
 
 type Ctx = { params: Promise<{ id: string }> }
+
+/** GET: everything the admin needs about one investor. */
+export async function GET(request: NextRequest, { params }: Ctx) {
+  try {
+    if (!(await getAdminUser(request))) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    const { id } = await params
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: { id: true, email: true, name: true, telegram: true, walletAddress: true, role: true, createdAt: true },
+    })
+    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
+
+    const [investments, transactions] = await Promise.all([
+      prisma.investment.findMany({
+        where: { userId: id },
+        orderBy: { createdAt: "desc" },
+        include: { cycles: { orderBy: { createdAt: "desc" }, take: 1 } },
+      }),
+      prisma.transaction.findMany({ where: { userId: id }, orderBy: { createdAt: "desc" }, take: 100 }),
+    ])
+
+    const deposited = investments.filter((i) => ["active", "completed"].includes(i.status)).reduce((s, i) => s + i.amount, 0)
+    const returns = transactions.filter((t) => t.type === "return" && t.status === "completed").reduce((s, t) => s + t.amount, 0)
+
+    return NextResponse.json({
+      user: { ...user, createdAt: user.createdAt.toISOString() },
+      stats: {
+        deposited,
+        returns,
+        active: investments.filter((i) => i.status === "active").length,
+        pending: investments.filter((i) => i.status === "pending").length,
+        completed: investments.filter((i) => i.status === "completed").length,
+      },
+      investments: investments.map((inv) => {
+        const c = inv.cycles[0]
+        const live = c ? effectiveCycle(c, inv.pool) : null
+        return {
+          id: inv.id,
+          userId: inv.userId,
+          userName: user.name || user.email,
+          userEmail: user.email,
+          amount: inv.amount,
+          pool: inv.pool,
+          roi: inv.roi,
+          status: inv.status,
+          txHash: inv.txHash,
+          network: inv.network,
+          createdAt: inv.createdAt.toISOString(),
+          cycle: c && live ? { currentValue: live.currentValue, targetValue: c.targetValue, progress: live.progress, status: c.status } : null,
+        }
+      }),
+      transactions: transactions.map((t) => ({
+        id: t.id,
+        type: t.type,
+        amount: t.amount,
+        net: t.netAmount ?? t.amount,
+        fee: t.fee ?? 0,
+        status: t.status,
+        note: t.note,
+        txHash: t.txHash,
+        createdAt: t.createdAt.toISOString(),
+      })),
+    })
+  } catch (error) {
+    console.error("Error loading user:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
 
 export async function DELETE(request: NextRequest, { params }: Ctx) {
   try {

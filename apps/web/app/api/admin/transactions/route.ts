@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       prisma.transaction.count({ where }),
       prisma.transaction.findMany({
         where,
-        include: { user: { select: { name: true, email: true } } },
+        include: { user: { select: { id: true, name: true, email: true } } },
         orderBy: { createdAt: "desc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       transactions: rows.map((t) => ({
         id: t.id,
+        userId: t.user.id,
         user: t.user.name || t.user.email,
         userEmail: t.user.email,
         type: t.type,

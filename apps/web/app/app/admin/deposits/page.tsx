@@ -1,6 +1,7 @@
 "use client"
 
 
+import Link from "next/link"
 import { Card, StatusPill, statusTone } from "@/components/ui"
 import { Pagination } from "@/components/data-table"
 import * as React from "react"
@@ -173,12 +174,12 @@ export default function DepositsPage() {
                 <div className="w-10 h-10 rounded-full bg-[oklch(0.62_0.12_178)/10] flex items-center justify-center text-sm font-bold text-primary">
                   {deposit.userName?.charAt(0).toUpperCase() || deposit.userEmail.charAt(0).toUpperCase()}
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-foreground">{deposit.userName || deposit.userEmail}</span>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link href={`/app/admin/users/${deposit.userId}`} className="text-sm font-medium text-foreground hover:underline">{deposit.userName || deposit.userEmail}</Link>
                     <StatusPill tone={statusTone(deposit.status)} className="capitalize">{deposit.status}</StatusPill>
                   </div>
-                  <div className="text-[10px] text-muted-foreground">{deposit.userEmail}</div>
+                  <div className="truncate text-[10px] text-muted-foreground">{deposit.userEmail}</div>
                 </div>
               </div>
               

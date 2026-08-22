@@ -4,13 +4,14 @@ import * as React from "react"
 import { Card, StatusPill, statusTone } from "@/components/ui"
 import { Pagination } from "@/components/data-table"
 import { useCachedFetch } from "@/lib/use-cached-fetch"
-import { PageHeader, StatGrid, FilterBar, Skeleton, formatDate } from "../_components"
+import { PageHeader, StatGrid, FilterBar, Skeleton, InvestorLink, KV, formatDate } from "../_components"
 
 const PAGE_SIZE = 12
 type Filter = "all" | "deposit" | "investment" | "return" | "withdrawal"
 
 interface Tx {
   id: string
+  userId: string
   user: string
   userEmail: string
   type: string
@@ -76,7 +77,32 @@ export default function TransactionsPage() {
         ]}
       />
 
-      <Card className="overflow-hidden">
+      {/* Mobile: cards */}
+      <div className="space-y-2 sm:hidden">
+        {data.transactions.map((tx) => (
+          <Card key={tx.id} className="p-3">
+            <div className="flex items-start justify-between gap-2">
+              <InvestorLink id={tx.userId} name={tx.user} email={tx.userEmail} />
+              <div className={`text-sm font-medium tabular-nums ${tx.type === "return" ? "text-[var(--color-success)]" : "text-foreground"}`}>
+                {tx.type === "return" ? "+" : tx.type === "withdrawal" ? "-" : ""}${tx.amount.toLocaleString()}
+              </div>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className={`rounded px-2 py-0.5 text-[10px] font-medium capitalize ${TYPE_STYLE[tx.type] || "bg-secondary text-foreground"}`}>{tx.type}</span>
+              <StatusPill tone={statusTone(tx.status)} className="capitalize">{tx.status}</StatusPill>
+              <span className="text-[10px] text-muted-foreground">{formatDate(tx.createdAt)}</span>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
+              <KV label="Fee">{tx.fee > 0 ? `-$${tx.fee.toLocaleString()}` : "—"}</KV>
+              <KV label="Net">${tx.net.toLocaleString()}</KV>
+            </div>
+            {tx.note && <div className="mt-1.5 text-[11px] text-muted-foreground">{tx.note}</div>}
+          </Card>
+        ))}
+        {data.transactions.length === 0 && <Card className="p-8 text-center text-sm text-muted-foreground">No transactions found</Card>}
+      </div>
+
+      <Card className="hidden overflow-hidden sm:block">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px]">
             <thead className="bg-secondary/50">
@@ -94,15 +120,8 @@ export default function TransactionsPage() {
               {data.transactions.map((tx) => (
                 <tr key={tx.id} className="hover:bg-secondary/30">
                   <td className="px-3 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-secondary text-[9px] font-bold text-foreground">
-                        {tx.user.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="truncate text-xs text-foreground">{tx.user}</div>
-                        {tx.note && <div className="max-w-[220px] truncate text-[10px] text-muted-foreground">{tx.note}</div>}
-                      </div>
-                    </div>
+                    <InvestorLink id={tx.userId} name={tx.user} email={tx.userEmail} size="sm" />
+                    {tx.note && <div className="ml-8 max-w-[220px] truncate text-[10px] text-muted-foreground">{tx.note}</div>}
                   </td>
                   <td className="px-3 py-2.5">
                     <span className={`rounded px-2 py-0.5 text-[10px] font-medium capitalize ${TYPE_STYLE[tx.type] || "bg-secondary text-foreground"}`}>{tx.type}</span>
