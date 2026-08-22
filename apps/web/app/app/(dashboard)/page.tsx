@@ -109,6 +109,16 @@ const TICK_MS_BY_PERIOD: Record<number, number> = {
   240: 1800,
 }
 
+// Share of the cycle's total move that each timeframe's window looks back
+// over: a 1m chart shows the last sliver of history, 4H shows it all.
+const LOOKBACK_BY_PERIOD: Record<number, number> = {
+  1: 0.03,
+  5: 0.08,
+  15: 0.2,
+  60: 0.5,
+  240: 1,
+}
+
 // How many points to render per selected timeframe (denser = longer range).
 const POINTS_BY_PERIOD: Record<number, number> = {
   1: 24,
@@ -194,12 +204,16 @@ export default function DashboardPage() {
       setLiveValue(0)
       return
     }
-    const seed = buildRealizedPath(startValue, serverValue, pointsForPeriod, targetValue, cycleKey)
+    // Short timeframes start their history near the current price (recent
+    // window); long ones start at entry.
+    const lookback = LOOKBACK_BY_PERIOD[timePeriod] ?? 1
+    const windowStart = serverValue - (serverValue - startValue) * lookback
+    const seed = buildRealizedPath(windowStart, serverValue, pointsForPeriod, targetValue, cycleKey)
     setChartData(seed)
     setLiveValue(seed[seed.length - 1] ?? serverValue)
     walkRef.current = { walk: 0, momentum: 0 }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasActiveCycle, cycleKey, pointsForPeriod])
+  }, [hasActiveCycle, cycleKey, pointsForPeriod, timePeriod])
 
   React.useEffect(() => {
     if (!hasActiveCycle || !activeCycle) return
