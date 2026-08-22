@@ -347,6 +347,19 @@
 }
 
 /* Deriv-style portfolio chart motion */
+@keyframes chart-reveal {
+  from {
+    width: 0;
+  }
+  to {
+    width: 300px;
+  }
+}
+.chart-reveal {
+  width: 0;
+  animation: chart-reveal 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
 @keyframes chart-draw {
   from {
     stroke-dashoffset: 1;
@@ -385,6 +398,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .chart-line-draw,
-  .animate-fade-up { animation: none; }
+  .chart-reveal,
+  .animate-fade-up { animation: none; width: 300px; }
   .reveal.reveal-armed { opacity: 1; transform: none; transition: none; }
 }

@@ -356,11 +356,16 @@ export default function DashboardPage() {
                         <stop offset="0%" stopColor="var(--chart-accent)" stopOpacity="0.20" />
                         <stop offset="100%" stopColor="var(--chart-accent)" stopOpacity="0" />
                       </linearGradient>
+                      {/* Left-to-right reveal of line + fill (width animates 0 → 300). */}
+                      <clipPath id="chartReveal">
+                        <rect key={`reveal-${timePeriod}-${activeCycle?.id}`} className="chart-reveal" x="0" y="0" width="300" height="200" />
+                      </clipPath>
                     </defs>
 
                     {/* Entry reference line (horizontal at the start value) */}
                     <line x1="0" y1={yFor(startValue)} x2="300" y2={yFor(startValue)} stroke="var(--chart-grid)" strokeWidth="1" strokeDasharray="3,4" vectorEffect="non-scaling-stroke" />
 
+                    <g clipPath="url(#chartReveal)">
                     {/* Realized area fill (start -> now) */}
                     {chartData.length > 0 && (
                       <path
@@ -373,8 +378,6 @@ export default function DashboardPage() {
                     {chartData.length > 0 && (
                       <path
                         key={`line-${timePeriod}-${activeCycle?.id}`}
-                        className="chart-line-draw"
-                        pathLength={1}
                         d={chartData.map((d, i) => `${i === 0 ? 'M' : 'L'} ${xForIndex(i).toFixed(2)} ${yFor(d).toFixed(2)}`).join(' ')}
                         fill="none"
                         stroke="var(--chart-accent)"
@@ -384,6 +387,7 @@ export default function DashboardPage() {
                         strokeLinejoin="round"
                       />
                     )}
+                    </g>
 
                     {/* Interactive hover areas */}
                     {chartData.map((d, i) => {
