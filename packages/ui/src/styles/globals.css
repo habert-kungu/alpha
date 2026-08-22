@@ -349,14 +349,15 @@
 /* Deriv-style portfolio chart motion */
 @keyframes chart-draw {
   from {
-    stroke-dashoffset: 1200;
+    stroke-dashoffset: 1;
   }
   to {
     stroke-dashoffset: 0;
   }
 }
 .chart-line-draw {
-  stroke-dasharray: 1200;
+  /* Path sets pathLength={1}, so these are length-independent. */
+  stroke-dasharray: 1;
   animation: chart-draw 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 

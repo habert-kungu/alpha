@@ -46,12 +46,15 @@ function mulberry32(seed: number) {
 // Realistic "realized" price path (SmartCharts-style): a volatile random walk
 // around an upward trend from start -> current. Mean-reverts toward the trend so
 // it never drifts away, and always lands exactly on the current value.
-function buildRealizedPath(startValue: number, currentValue: number, points: number = 48): number[] {
+function buildRealizedPath(startValue: number, currentValue: number, points: number = 48, targetValue?: number): number[] {
   const n = Math.max(2, Math.floor(points))
   const gain = currentValue - startValue
   const level = Math.max(1, Math.abs(currentValue) || Math.abs(startValue) || 1)
-  // Per-tick volatility as a % of price level — this is what makes it feel live.
-  const tickVol = level * 0.02
+  // Volatility scales with how far the cycle has run: a fresh cycle wobbles
+  // gently around entry; a well-progressed one shows a livelier walk.
+  const span = Math.max(1, (targetValue ?? currentValue) - startValue)
+  const progressFrac = Math.max(0, Math.min(1, gain / span))
+  const tickVol = level * (0.003 + 0.012 * progressFrac)
   const rand = mulberry32(0x9e3779b9 ^ (n * 2654435761))
   const data: number[] = []
   let walk = 0
@@ -65,7 +68,8 @@ function buildRealizedPath(startValue: number, currentValue: number, points: num
     const trend = startValue + gain * (1 - Math.pow(1 - t, 1.5))
     // Random step + mild mean-reversion keeps the walk hugging the trend.
     walk += (rand() - 0.5) * 2 * tickVol - walk * 0.12
-    const v = Math.max(startValue * 0.8, trend + walk)
+    // Never print a drawdown deeper than 1.5% below entry.
+    const v = Math.max(startValue * 0.985, trend + walk)
     data.push(Math.round(v * 100) / 100)
   }
 
@@ -116,7 +120,15 @@ interface UserStats {
 export default function DashboardPage() {
   const { user } = useAuth()
   // Cached: instant on return visits, refreshed in the background.
-  const { data: stats, loading } = useCachedFetch<UserStats>(user ? "/api/user/stats" : null, { ttl: 60_000 })
+  const { data: stats, loading, refresh } = useCachedFetch<UserStats>(user ? "/api/user/stats" : null, { ttl: 60_000 })
+
+  // Cycles advance with time on the server; poll so the chart keeps moving
+  // while the page is open (Pusher events also trigger a refresh).
+  React.useEffect(() => {
+    if (!user) return
+    const id = setInterval(() => void refresh(), 60_000)
+    return () => clearInterval(id)
+  }, [user, refresh])
   const [timePeriod, setTimePeriod] = React.useState(60)
   const [hoveredPoint, setHoveredPoint] = React.useState<{x: number; y: number; value: number; time: string} | null>(null)
 
@@ -135,15 +147,17 @@ export default function DashboardPage() {
   // Realized path from start -> current. Memoized + deterministic so it stays
   // stable across re-renders (hover, tooltip) and never flickers.
   const chartData = React.useMemo(
-    () => (hasActiveCycle ? buildRealizedPath(startValue, currentDisplayValue, pointsForPeriod) : []),
-    [hasActiveCycle, startValue, currentDisplayValue, pointsForPeriod]
+    () => (hasActiveCycle ? buildRealizedPath(startValue, currentDisplayValue, pointsForPeriod, targetValue) : []),
+    [hasActiveCycle, startValue, currentDisplayValue, pointsForPeriod, targetValue]
   )
 
   // Y-domain fits the realized ticks + the entry line (NOT the far-away target),
   // so the price volatility fills the vertical space like a real market chart.
   const domainSeries = chartData.length > 0 ? [...chartData, startValue] : [startValue, currentDisplayValue]
-  const rawMin = Math.min(...domainSeries)
-  const rawMax = Math.max(...domainSeries)
+  // Keep at least a ±6% band around entry so early-cycle noise reads as noise,
+  // not as a crash filling the whole chart.
+  const rawMin = Math.min(...domainSeries, startValue * 0.94)
+  const rawMax = Math.max(...domainSeries, startValue * 1.06)
   const pad = (rawMax - rawMin || Math.max(1, rawMax * 0.02)) * 0.14
   const minValue = rawMin - pad
   const maxValue = rawMax + pad
@@ -360,6 +374,7 @@ export default function DashboardPage() {
                       <path
                         key={`line-${timePeriod}-${activeCycle?.id}`}
                         className="chart-line-draw"
+                        pathLength={1}
                         d={chartData.map((d, i) => `${i === 0 ? 'M' : 'L'} ${xForIndex(i).toFixed(2)} ${yFor(d).toFixed(2)}`).join(' ')}
                         fill="none"
                         stroke="var(--chart-accent)"

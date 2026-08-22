@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import prisma from '@/lib/db'
+import { effectiveCycle } from '@/lib/trading'
 
 export async function GET(request: NextRequest) {
   try {
@@ -37,16 +38,22 @@ export async function GET(request: NextRequest) {
     const activeCycles = investments
       .filter((i: any) => i.status === 'active' && i.cycles.length > 0)
       .flatMap((i: any) => i.cycles.filter((c: any) => c.status === 'active'))
-      .map((cycle: any) => ({
-        id: cycle.id,
-        pool: investments.find((inv: any) => inv.id === cycle.investmentId)?.pool || 'weekly',
-        roi: investments.find((inv: any) => inv.id === cycle.investmentId)?.roi ?? (cycle.startValue ? cycle.targetValue / cycle.startValue : 10),
-        startValue: cycle.startValue,
-        currentValue: cycle.currentValue,
-        targetValue: cycle.targetValue,
-        progress: cycle.progress,
-        status: cycle.status,
-      }))
+      .map((cycle: any) => {
+        const inv = investments.find((i: any) => i.id === cycle.investmentId)
+        const pool = inv?.pool || 'weekly'
+        const live = effectiveCycle(cycle, pool)
+        return {
+          id: cycle.id,
+          pool,
+          roi: inv?.roi ?? (cycle.startValue ? cycle.targetValue / cycle.startValue : 10),
+          startValue: cycle.startValue,
+          currentValue: live.currentValue,
+          targetValue: cycle.targetValue,
+          progress: live.progress,
+          status: cycle.status,
+          startedAt: cycle.createdAt.toISOString(),
+        }
+      })
 
     const pendingReturns = activeCycles.reduce((sum: number, c: any) => sum + (c.targetValue - c.currentValue), 0)
 

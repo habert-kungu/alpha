@@ -25,6 +25,35 @@ export const MAX_DEPOSIT_USD = 1_000_000
 
 export const WITHDRAWAL_TAX_RATE = 0.165 // 16.5%
 
+/**
+ * Live position of a cycle. Active cycles advance automatically with elapsed
+ * time over the pool's duration; an admin adjustment (stored progress) can
+ * push it further ahead but never holds it back. Completed/other statuses
+ * return the stored values untouched.
+ */
+export function effectiveCycle(
+  cycle: { startValue: number; currentValue: number; targetValue: number; progress: number; status: string; createdAt: Date | string },
+  pool: string,
+  now: number = Date.now()
+): { progress: number; currentValue: number; timeProgress: number } {
+  const stored = Math.max(0, Math.min(100, cycle.progress || 0))
+  if (cycle.status !== 'active') return { progress: stored, currentValue: cycle.currentValue, timeProgress: stored }
+  const days = (POOLS[pool as PoolType] ?? POOLS.weekly).durationDays
+  const started = new Date(cycle.createdAt).getTime()
+  const elapsed = Math.max(0, now - started)
+  const timeProgress = Math.max(0, Math.min(100, (elapsed / (days * 24 * 60 * 60 * 1000)) * 100))
+  const progress = Math.max(stored, timeProgress)
+  const currentValue =
+    progress > stored
+      ? cycle.startValue + (cycle.targetValue - cycle.startValue) * (progress / 100)
+      : cycle.currentValue
+  return {
+    progress: Math.round(progress * 100) / 100,
+    currentValue: Math.round(currentValue * 100) / 100,
+    timeProgress: Math.round(timeProgress * 100) / 100,
+  }
+}
+
 /** Human label for a stored pool key. */
 export function poolLabel(pool: string, short = false): string {
   if (pool === 'daily') return short ? '48H' : '48H Pool'
