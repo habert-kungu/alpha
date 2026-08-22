@@ -46,18 +46,29 @@ function mulberry32(seed: number) {
 // Realistic "realized" price path (SmartCharts-style): a volatile random walk
 // around an upward trend from start -> current. Mean-reverts toward the trend so
 // it never drifts away, and always lands exactly on the current value.
-function buildRealizedPath(startValue: number, currentValue: number, points: number = 48, targetValue?: number): number[] {
+function hashSeed(str: string): number {
+  let h = 2166136261
+  for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619)
+  return h >>> 0
+}
+
+/**
+ * Synthetic "market" path from entry to the live value. Deterministic per
+ * cycle + timeframe so it doesn't flicker between renders, but with real
+ * volatility: multi-scale noise, momentum bursts and pullbacks below entry.
+ */
+function buildRealizedPath(startValue: number, currentValue: number, points: number = 48, targetValue?: number, seedKey = "cycle"): number[] {
   const n = Math.max(2, Math.floor(points))
   const gain = currentValue - startValue
   const level = Math.max(1, Math.abs(currentValue) || Math.abs(startValue) || 1)
-  // Volatility scales with how far the cycle has run: a fresh cycle wobbles
-  // gently around entry; a well-progressed one shows a livelier walk.
   const span = Math.max(1, (targetValue ?? currentValue) - startValue)
   const progressFrac = Math.max(0, Math.min(1, gain / span))
-  const tickVol = level * (0.003 + 0.012 * progressFrac)
-  const rand = mulberry32(0x9e3779b9 ^ (n * 2654435761))
+  // Per-tick volatility: ~1.4% of price level at entry, rising to ~3.5% late in the cycle.
+  const tickVol = level * (0.014 + 0.021 * progressFrac)
+  const rand = mulberry32(hashSeed(`${seedKey}:${n}`))
   const data: number[] = []
   let walk = 0
+  let momentum = 0
 
   for (let i = 0; i < n; i++) {
     if (i === n - 1) {
@@ -65,11 +76,15 @@ function buildRealizedPath(startValue: number, currentValue: number, points: num
       continue
     }
     const t = i / (n - 1)
-    const trend = startValue + gain * (1 - Math.pow(1 - t, 1.5))
-    // Random step + mild mean-reversion keeps the walk hugging the trend.
-    walk += (rand() - 0.5) * 2 * tickVol - walk * 0.12
-    // Never print a drawdown deeper than 1.5% below entry.
-    const v = Math.max(startValue * 0.985, trend + walk)
+    const trend = startValue + gain * (1 - Math.pow(1 - t, 1.4))
+    // Momentum gives runs of several candles in one direction (bursts + pullbacks).
+    momentum = momentum * 0.72 + (rand() - 0.5) * tickVol * 1.6
+    // Fast jitter + slow swell so the line has texture at every zoom level.
+    const jitter = (rand() - 0.5) * tickVol
+    const swell = Math.sin(t * Math.PI * (2 + (rand() < 0.02 ? 1 : 0)) + walk * 0.001) * tickVol * 0.9
+    walk = (walk + momentum + jitter) * 0.93
+    // Pullbacks can dip up to ~7% below entry, but never below that.
+    const v = Math.max(startValue * 0.93, trend + walk + swell)
     data.push(Math.round(v * 100) / 100)
   }
 
@@ -147,8 +162,8 @@ export default function DashboardPage() {
   // Realized path from start -> current. Memoized + deterministic so it stays
   // stable across re-renders (hover, tooltip) and never flickers.
   const chartData = React.useMemo(
-    () => (hasActiveCycle ? buildRealizedPath(startValue, currentDisplayValue, pointsForPeriod, targetValue) : []),
-    [hasActiveCycle, startValue, currentDisplayValue, pointsForPeriod, targetValue]
+    () => (hasActiveCycle ? buildRealizedPath(startValue, currentDisplayValue, pointsForPeriod, targetValue, `${activeCycle?.id}:${timePeriod}`) : []),
+    [hasActiveCycle, startValue, currentDisplayValue, pointsForPeriod, targetValue, activeCycle?.id, timePeriod]
   )
 
   // Y-domain fits the realized ticks + the entry line (NOT the far-away target),
@@ -156,8 +171,8 @@ export default function DashboardPage() {
   const domainSeries = chartData.length > 0 ? [...chartData, startValue] : [startValue, currentDisplayValue]
   // Keep at least a ±6% band around entry so early-cycle noise reads as noise,
   // not as a crash filling the whole chart.
-  const rawMin = Math.min(...domainSeries, startValue * 0.94)
-  const rawMax = Math.max(...domainSeries, startValue * 1.06)
+  const rawMin = Math.min(...domainSeries, startValue * 0.96)
+  const rawMax = Math.max(...domainSeries, startValue * 1.04)
   const pad = (rawMax - rawMin || Math.max(1, rawMax * 0.02)) * 0.14
   const minValue = rawMin - pad
   const maxValue = rawMax + pad
