@@ -1,107 +1,347 @@
 "use client"
 
-
-import { Card } from "@/components/ui"
-import { usePagination, Pagination } from "@/components/data-table"
 import * as React from "react"
+import { Card, StatusPill } from "@/components/ui"
+import { Pagination } from "@/components/data-table"
+import { useAuth } from "@/app/providers/auth-provider"
+import { useCachedFetch, invalidateCache } from "@/lib/use-cached-fetch"
+import { PageHeader, StatGrid, Skeleton, Modal, inputCls, formatDate } from "../_components"
 
-const users = [
-  { id: "USR-001", name: "Alex Morgan", email: "alex@example.com", telegram: "@alexm", deposits: 4500, returns: 12500, joined: "Jan 2026" },
-  { id: "USR-002", name: "John Doe", email: "john@example.com", telegram: "@johnd", deposits: 1500, returns: 3200, joined: "Feb 2026" },
-  { id: "USR-003", name: "Sarah Kim", email: "sarah@example.com", telegram: "@sarahk", deposits: 8000, returns: 24000, joined: "Mar 2026" },
-  { id: "USR-004", name: "Mike Ross", email: "mike@example.com", telegram: "@miker", deposits: 2200, returns: 5600, joined: "Mar 2026" },
-  { id: "USR-005", name: "Lisa Moon", email: "lisa@example.com", telegram: "@lisam", deposits: 3500, returns: 9800, joined: "Apr 2026" },
-]
+const PAGE_SIZE = 10
+
+interface AdminUser {
+  id: string
+  email: string
+  name: string | null
+  telegram: string | null
+  role: string
+  createdAt: string
+  investments: number
+  deposits: number
+  returns: number
+}
+
+interface UsersResponse {
+  users: AdminUser[]
+  total: number
+  page: number
+  pageCount: number
+  totals: { users: number; deposits: number; returns: number }
+}
+
+function useDebounced<T>(value: T, ms = 300) {
+  const [v, setV] = React.useState(value)
+  React.useEffect(() => {
+    const t = setTimeout(() => setV(value), ms)
+    return () => clearTimeout(t)
+  }, [value, ms])
+  return v
+}
 
 export default function UsersPage() {
+  const { user: me } = useAuth()
   const [search, setSearch] = React.useState("")
+  const [page, setPage] = React.useState(1)
+  const q = useDebounced(search.trim())
 
-  const filtered = users.filter(u => 
-    u.name.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase()) ||
-    u.telegram.toLowerCase().includes(search.toLowerCase())
-  )
+  const key = `/api/admin/users?page=${page}&pageSize=${PAGE_SIZE}&q=${encodeURIComponent(q)}`
+  const { data, loading, refreshing, refresh } = useCachedFetch<UsersResponse>(key, { ttl: 60_000 })
 
-  const { pageItems, page, setPage, pageCount, total, start, end } = usePagination(filtered, 10)
+  const [showAdd, setShowAdd] = React.useState(false)
+  const [removing, setRemoving] = React.useState<AdminUser | null>(null)
+  const [busy, setBusy] = React.useState(false)
+  const [error, setError] = React.useState("")
+  const [notice, setNotice] = React.useState<React.ReactNode>(null)
 
-  const totalDeposits = users.reduce((sum, u) => sum + u.deposits, 0)
-  const totalReturns = users.reduce((sum, u) => sum + u.returns, 0)
+  // Add-user form state
+  const [form, setForm] = React.useState({ name: "", email: "", telegram: "", password: "", role: "user" })
+
+  const changeSearch = (v: string) => {
+    setSearch(v)
+    setPage(1)
+  }
+
+  const afterMutation = async () => {
+    invalidateCache("/api/admin/users")
+    invalidateCache("/api/admin/stats")
+    await refresh()
+  }
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    setError("")
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setError(json.error || "Failed to create user")
+        return
+      }
+      setShowAdd(false)
+      setForm({ name: "", email: "", telegram: "", password: "", role: "user" })
+      setNotice(
+        json.emailSent ? (
+          <>Account created. Sign-in details were emailed to <strong>{json.user.email}</strong>.</>
+        ) : (
+          <>
+            Account created for <strong>{json.user.email}</strong>.
+            {json.tempPassword && (
+              <>
+                {" "}Email isn't configured, so share this temporary password manually:{" "}
+                <code className="rounded bg-secondary px-1.5 py-0.5 font-mono text-[12px]">{json.tempPassword}</code>
+              </>
+            )}
+          </>
+        )
+      )
+      await afterMutation()
+    } catch {
+      setError("Network error. Please try again.")
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleRemove = async () => {
+    if (!removing) return
+    setBusy(true)
+    setError("")
+    try {
+      const res = await fetch(`/api/admin/users/${removing.id}`, { method: "DELETE" })
+      const json = await res.json()
+      if (!res.ok) {
+        setError(json.error || "Failed to remove user")
+        return
+      }
+      setNotice(<>Removed <strong>{removing.name || removing.email}</strong> and all their records.</>)
+      setRemoving(null)
+      await afterMutation()
+    } catch {
+      setError("Network error. Please try again.")
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const toggleRole = async (u: AdminUser) => {
+    const role = u.role === "admin" ? "user" : "admin"
+    setBusy(true)
+    setError("")
+    try {
+      const res = await fetch(`/api/admin/users/${u.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      })
+      const json = await res.json()
+      if (!res.ok) setError(json.error || "Failed to update role")
+      else await afterMutation()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (loading || !data) return <Skeleton rows={5} />
+
+  const start = (data.page - 1) * PAGE_SIZE
+  const end = Math.min(data.page * PAGE_SIZE, data.total)
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-semibold text-foreground">Users</h1>
-        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Manage registered users</p>
-      </div>
+      <PageHeader
+        title="Users"
+        subtitle="Manage registered users"
+        right={
+          <button
+            onClick={() => {
+              setError("")
+              setShowAdd(true)
+            }}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"
+          >
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M12 5v14M5 12h14" /></svg>
+            Add user
+          </button>
+        }
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="p-3 text-center">
-          <div className="text-lg font-bold text-foreground">{users.length}</div>
-          <div className="text-[10px] text-muted-foreground">Total Users</div>
-        </Card>
-        <Card className="p-3 text-center">
-          <div className="text-lg font-bold text-foreground">${totalDeposits.toLocaleString()}</div>
-          <div className="text-[10px] text-muted-foreground">Total Deposits</div>
-        </Card>
-        <Card className="p-3 text-center">
-          <div className="text-lg font-bold text-emerald-600">${totalReturns.toLocaleString()}</div>
-          <div className="text-[10px] text-muted-foreground">Total Returns</div>
-        </Card>
-      </div>
+      {notice && (
+        <div className="flex items-start justify-between gap-3 rounded-lg border border-[var(--color-success)]/25 bg-[var(--bg-success)] p-3 text-xs text-foreground">
+          <span>{notice}</span>
+          <button onClick={() => setNotice(null)} className="text-muted-foreground hover:text-foreground" aria-label="Dismiss">✕</button>
+        </div>
+      )}
+      {error && !showAdd && !removing && (
+        <div className="rounded-lg border border-destructive/25 bg-[var(--bg-danger)] p-3 text-xs text-destructive">{error}</div>
+      )}
 
-      {/* Search */}
+      <StatGrid
+        items={[
+          { label: "Total Users", value: data.totals.users },
+          { label: "Total Deposits", value: `$${data.totals.deposits.toLocaleString()}` },
+          { label: "Total Returns", value: `$${data.totals.returns.toLocaleString()}`, className: "text-[var(--color-success)]" },
+        ]}
+      />
+
       <Card className="p-3">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search users..."
-          className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-[oklch(0.21_0_0)]"
-        />
+        <div className="relative">
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => changeSearch(e.target.value)}
+            placeholder="Search by name, email or Telegram…"
+            className={inputCls}
+          />
+          {refreshing && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">Updating…</span>}
+        </div>
       </Card>
 
-      {/* Users Table */}
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[500px]">
+          <table className="w-full min-w-[640px]">
             <thead className="bg-secondary/50">
               <tr>
-                <th className="px-3 py-2.5 text-left text-[9px] font-mono uppercase text-muted-foreground">User</th>
-                <th className="px-3 py-2.5 text-left text-[9px] font-mono uppercase text-muted-foreground">Telegram</th>
-                <th className="px-3 py-2.5 text-right text-[9px] font-mono uppercase text-muted-foreground">Deposited</th>
-                <th className="px-3 py-2.5 text-right text-[9px] font-mono uppercase text-muted-foreground">Returns</th>
-                <th className="px-3 py-2.5 text-left text-[9px] font-mono uppercase text-muted-foreground">Joined</th>
+                <th className="px-3 py-2.5 text-left font-mono text-[9px] uppercase text-muted-foreground">User</th>
+                <th className="px-3 py-2.5 text-left font-mono text-[9px] uppercase text-muted-foreground">Telegram</th>
+                <th className="px-3 py-2.5 text-left font-mono text-[9px] uppercase text-muted-foreground">Role</th>
+                <th className="px-3 py-2.5 text-right font-mono text-[9px] uppercase text-muted-foreground">Deposited</th>
+                <th className="px-3 py-2.5 text-right font-mono text-[9px] uppercase text-muted-foreground">Returns</th>
+                <th className="px-3 py-2.5 text-left font-mono text-[9px] uppercase text-muted-foreground">Joined</th>
+                <th className="px-3 py-2.5 text-right font-mono text-[9px] uppercase text-muted-foreground">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {pageItems.map((user) => (
-                <tr key={user.id} className="hover:bg-secondary/30 cursor-pointer">
-                  <td className="px-3 py-2.5">
-                    <div>
+              {data.users.map((u) => {
+                const isMe = u.id === me?.id
+                return (
+                  <tr key={u.id} className="hover:bg-secondary/30">
+                    <td className="px-3 py-2.5">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center text-[10px] font-bold text-foreground">
-                          {user.name.charAt(0)}
+                        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-bold text-foreground">
+                          {(u.name || u.email).charAt(0).toUpperCase()}
                         </div>
-                        <div>
-                          <div className="text-xs font-medium text-foreground">{user.name}</div>
-                          <div className="text-[9px] text-muted-foreground">{user.email}</div>
+                        <div className="min-w-0">
+                          <div className="truncate text-xs font-medium text-foreground">
+                            {u.name || "—"} {isMe && <span className="text-[10px] text-muted-foreground">(you)</span>}
+                          </div>
+                          <div className="truncate text-[10px] text-muted-foreground">{u.email}</div>
                         </div>
                       </div>
-                    </div>
+                    </td>
+                    <td className="px-3 py-2.5 text-xs text-muted-foreground">{u.telegram || "—"}</td>
+                    <td className="px-3 py-2.5">
+                      <StatusPill tone={u.role === "admin" ? "info" : "neutral"} className="capitalize">{u.role}</StatusPill>
+                    </td>
+                    <td className="px-3 py-2.5 text-right text-xs font-medium tabular-nums text-foreground">${u.deposits.toLocaleString()}</td>
+                    <td className="px-3 py-2.5 text-right text-xs font-medium tabular-nums text-[var(--color-success)]">${u.returns.toLocaleString()}</td>
+                    <td className="px-3 py-2.5 text-xs text-muted-foreground">{formatDate(u.createdAt)}</td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => toggleRole(u)}
+                          disabled={busy || isMe}
+                          title={isMe ? "You can't change your own role" : u.role === "admin" ? "Demote to user" : "Promote to admin"}
+                          className="rounded-md border border-border px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          {u.role === "admin" ? "Make user" : "Make admin"}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setError("")
+                            setRemoving(u)
+                          }}
+                          disabled={busy || isMe}
+                          title={isMe ? "You can't remove your own account" : "Remove user"}
+                          className="rounded-md border border-destructive/30 px-2 py-1 text-[11px] font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+              {data.users.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                    {q ? `No users match “${q}”` : "No users yet"}
                   </td>
-                  <td className="px-3 py-2.5 text-xs text-muted-foreground">{user.telegram}</td>
-                  <td className="px-3 py-2.5 text-right text-xs font-medium text-foreground">${user.deposits.toLocaleString()}</td>
-                  <td className="px-3 py-2.5 text-right text-xs font-medium text-emerald-600">${user.returns.toLocaleString()}</td>
-                  <td className="px-3 py-2.5 text-xs text-muted-foreground">{user.joined}</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
       </Card>
 
-      <Pagination page={page} pageCount={pageCount} onPageChange={setPage} total={total} start={start} end={end} className="mt-4" />
+      <Pagination page={data.page} pageCount={data.pageCount} onPageChange={setPage} total={data.total} start={start} end={end} className="mt-4" />
+
+      {/* Add user */}
+      <Modal open={showAdd} onClose={() => !busy && setShowAdd(false)} title="Add user">
+        <form onSubmit={handleAdd} className="space-y-3">
+          {error && <div className="rounded-lg border border-destructive/25 bg-[var(--bg-danger)] p-2.5 text-xs text-destructive">{error}</div>}
+          <div>
+            <label className="mb-1 block text-xs font-medium text-foreground">Full name</label>
+            <input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Jane Doe" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-foreground">Email</label>
+            <input className={inputCls} type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="jane@example.com" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-foreground">Telegram</label>
+              <input className={inputCls} value={form.telegram} onChange={(e) => setForm({ ...form, telegram: e.target.value })} placeholder="@username" />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-foreground">Role</label>
+              <select className={inputCls} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-foreground">
+              Password <span className="font-normal text-muted-foreground">(optional — a temporary one is generated and emailed)</span>
+            </label>
+            <input className={inputCls} type="text" minLength={6} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Leave blank to auto-generate" autoComplete="off" />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={() => setShowAdd(false)} disabled={busy} className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground">
+              Cancel
+            </button>
+            <button type="submit" disabled={busy} className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
+              {busy ? "Creating…" : "Create user"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Remove user */}
+      <Modal open={!!removing} onClose={() => !busy && setRemoving(null)} title="Remove user">
+        {removing && (
+          <div className="space-y-4">
+            {error && <div className="rounded-lg border border-destructive/25 bg-[var(--bg-danger)] p-2.5 text-xs text-destructive">{error}</div>}
+            <p className="text-sm text-foreground">
+              Remove <strong>{removing.name || removing.email}</strong>? This permanently deletes their account along with{" "}
+              <strong>{removing.investments}</strong> investment{removing.investments === 1 ? "" : "s"}, cycles and transaction history. This can't be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setRemoving(null)} disabled={busy} className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground">
+                Cancel
+              </button>
+              <button onClick={handleRemove} disabled={busy} className="rounded-lg bg-destructive px-3 py-2 text-xs font-medium text-destructive-foreground hover:opacity-90 disabled:opacity-50">
+                {busy ? "Removing…" : "Remove user"}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }

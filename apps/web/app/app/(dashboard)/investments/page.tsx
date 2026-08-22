@@ -4,6 +4,7 @@
 import { Card } from "@/components/ui"
 import * as React from "react"
 import Link from "next/link"
+import { invalidateCache } from "@/lib/use-cached-fetch"
 
 const BINANCE_WALLET = "TP3HUdgXCsVBwnRARKEouqYo9USdZTUcbg"
 
@@ -53,6 +54,7 @@ export default function InvestmentsPage() {
       const telegramUrl = `https://t.me/khan_bashiri?text=${encodeURIComponent(message)}`
       window.open(telegramUrl, "_blank")
 
+      invalidateCache("/api/user/")
       setSubmitSuccess(true)
       setShowConfirm(false)
       setAmount("")

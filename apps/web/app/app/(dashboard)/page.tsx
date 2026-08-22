@@ -5,6 +5,7 @@ import { Card } from "@/components/ui"
 import * as React from "react"
 import Link from "next/link"
 import { useAuth } from "@/app/providers/auth-provider"
+import { useCachedFetch } from "@/lib/use-cached-fetch"
 
 function StatCard({ label, value, icon, change, positive, index = 0 }: { label: string; value: string; icon: string; change?: string; positive?: boolean; index?: number }) {
   return (
@@ -113,30 +114,10 @@ interface UserStats {
 
 export default function DashboardPage() {
   const { user } = useAuth()
-  const [stats, setStats] = React.useState<UserStats | null>(null)
-  const [loading, setLoading] = React.useState(true)
+  // Cached: instant on return visits, refreshed in the background.
+  const { data: stats, loading } = useCachedFetch<UserStats>(user ? "/api/user/stats" : null, { ttl: 60_000 })
   const [timePeriod, setTimePeriod] = React.useState(60)
   const [hoveredPoint, setHoveredPoint] = React.useState<{x: number; y: number; value: number; time: string} | null>(null)
-
-  React.useEffect(() => {
-    if (user) {
-      fetchUserStats()
-    }
-  }, [user])
-
-  const fetchUserStats = async () => {
-    try {
-      const res = await fetch('/api/user/stats')
-      if (res.ok) {
-        const data = await res.json()
-        setStats(data)
-      }
-    } catch (error) {
-      console.error('Failed to fetch stats:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const activeCycle = stats?.activeCycles?.[0]
 

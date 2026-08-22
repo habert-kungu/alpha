@@ -4,6 +4,7 @@
 import { Card, StatusPill, statusTone } from "@/components/ui"
 import * as React from "react"
 import { useAuth } from "@/app/providers/auth-provider"
+import { useCachedFetch } from "@/lib/use-cached-fetch"
 
 interface Transaction {
   id: string
@@ -20,31 +21,11 @@ interface Transaction {
 
 export default function TransactionsPage() {
   const { user } = useAuth()
-  const [transactions, setTransactions] = React.useState<Transaction[]>([])
-  const [loading, setLoading] = React.useState(true)
+  const { data, loading } = useCachedFetch<{ transactions: Transaction[] }>(user ? "/api/user/transactions" : null, { ttl: 60_000 })
+  const transactions = React.useMemo(() => data?.transactions ?? [], [data])
   const [filter, setFilter] = React.useState<string>("all")
   const [search, setSearch] = React.useState("")
   const [selectedTx, setSelectedTx] = React.useState<Transaction | null>(null)
-
-  React.useEffect(() => {
-    if (user) {
-      fetchTransactions()
-    }
-  }, [user])
-
-  const fetchTransactions = async () => {
-    try {
-      const res = await fetch('/api/user/transactions')
-      if (res.ok) {
-        const data = await res.json()
-        setTransactions(data.transactions || [])
-      }
-    } catch (error) {
-      console.error('Failed to fetch transactions:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const filtered = transactions.filter(tx => {
     if (filter !== "all" && tx.type !== filter) return false

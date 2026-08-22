@@ -7,6 +7,7 @@ import { useAuth } from "@/app/providers/auth-provider"
 import { NotificationProvider } from "@/app/providers/notification-provider"
 import { NotificationBell, ToastNotification } from "@/app/components/notification-bell"
 import { ThemeToggle } from "@/app/components/theme-toggle"
+import { clearCache } from "@/lib/use-cached-fetch"
 
 type NavItem = { href: string; label: string; icon: string }
 type NavGroup = { label: string; items: NavItem[] }
@@ -210,6 +211,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 try {
                   await fetch("/api/auth/signout", { method: "POST" })
                 } finally {
+                  clearCache()
                   window.location.href = "/login"
                 }
               }}

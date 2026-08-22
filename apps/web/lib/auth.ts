@@ -84,3 +84,84 @@ export async function validateUser(email: string, password: string) {
     telegram: user.telegram,
   }
 }
+// ---------------------------------------------------------------------------
+// Request-scoped session helpers for API routes
+// ---------------------------------------------------------------------------
+
+import { createHash, randomBytes } from "node:crypto"
+import type { NextRequest } from "next/server"
+
+export interface SessionUser {
+  id: string
+  email: string
+  name: string | null
+  role: string
+  telegram: string | null
+}
+
+/**
+ * Resolves the signed-in user from the request cookie and re-reads their role
+ * from the database, so a role change (or a deleted account) takes effect
+ * immediately rather than whenever the 7-day JWT happens to expire.
+ */
+export async function getSessionUser(request: NextRequest): Promise<SessionUser | null> {
+  const token = request.cookies.get("token")?.value
+  if (!token) return null
+  const payload = await verifyToken(token)
+  if (!payload?.userId) return null
+  const user = await prisma.user.findUnique({
+    where: { id: payload.userId },
+    select: { id: true, email: true, name: true, role: true, telegram: true },
+  })
+  return user
+}
+
+export async function getAdminUser(request: NextRequest): Promise<SessionUser | null> {
+  const user = await getSessionUser(request)
+  return user?.role === "admin" ? user : null
+}
+
+export function isStrongEnoughPassword(password: unknown): password is string {
+  return typeof password === "string" && password.length >= 6 && password.length <= 128
+}
+
+// ---------------------------------------------------------------------------
+// Password reset tokens (hashed at rest, single-use, 1h expiry)
+// ---------------------------------------------------------------------------
+
+export const RESET_TOKEN_TTL_MS = 60 * 60 * 1000
+
+export function hashResetToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex")
+}
+
+export async function createPasswordResetToken(userId: string): Promise<string> {
+  const token = randomBytes(32).toString("base64url")
+  // Invalidate any outstanding tokens so only the newest link works.
+  await prisma.passwordResetToken.updateMany({
+    where: { userId, usedAt: null },
+    data: { usedAt: new Date() },
+  })
+  await prisma.passwordResetToken.create({
+    data: { userId, tokenHash: hashResetToken(token), expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS) },
+  })
+  return token
+}
+
+/** Returns the owning user id if the token is valid, unused and unexpired. */
+export async function consumePasswordResetToken(token: string): Promise<string | null> {
+  if (typeof token !== "string" || token.length < 20) return null
+  const record = await prisma.passwordResetToken.findUnique({ where: { tokenHash: hashResetToken(token) } })
+  if (!record || record.usedAt || record.expiresAt.getTime() < Date.now()) return null
+  await prisma.passwordResetToken.update({ where: { id: record.id }, data: { usedAt: new Date() } })
+  return record.userId
+}
+
+export function generateTempPassword(): string {
+  // 12 chars from an unambiguous alphabet (no 0/O/1/l).
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789"
+  const bytes = randomBytes(12)
+  let out = ""
+  for (let i = 0; i < 12; i++) out += alphabet[bytes[i]! % alphabet.length]
+  return out
+}

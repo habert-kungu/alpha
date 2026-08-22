@@ -1,16 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken } from '@/lib/auth'
+import { getAdminUser } from '@/lib/auth'
 import prisma from '@/lib/db'
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('token')?.value
-    if (!token) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const payload = await verifyToken(token)
-    if (!payload || payload.role !== 'admin') {
+    if (!(await getAdminUser(request))) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

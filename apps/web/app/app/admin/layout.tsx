@@ -2,8 +2,12 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { ThemeToggle } from "@/app/components/theme-toggle"
+import { useAuth } from "@/app/providers/auth-provider"
+import { NotificationProvider } from "@/app/providers/notification-provider"
+import { NotificationBell, ToastNotification } from "@/app/components/notification-bell"
+import { clearCache } from "@/lib/use-cached-fetch"
 
 type NavItem = { href: string; label: string; icon: string }
 
@@ -13,6 +17,7 @@ const navItems: NavItem[] = [
   { href: "/app/admin/investments", label: "Investments", icon: "investment" },
   { href: "/app/admin/transactions", label: "Transactions", icon: "transaction" },
   { href: "/app/admin/users", label: "Users", icon: "user" },
+  { href: "/app/admin/communications", label: "Communications", icon: "mail" },
 ]
 
 function Icon({ name, className }: { name: string; className?: string }) {
@@ -23,6 +28,7 @@ function Icon({ name, className }: { name: string; className?: string }) {
     transaction: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>,
     user: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>,
     logout: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+    mail: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>,
     menu: <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
   }
   return <span className="inline-flex">{icons[name]}</span>
@@ -56,13 +62,32 @@ function AppSwitcher({ current }: { current: "user" | "admin" }) {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
+  const { user, loading } = useAuth()
   const [mobileOpen, setMobileOpen] = React.useState(false)
+
+  // Second line of defence behind proxy.ts: if the session resolves to a
+  // non-admin (e.g. role was revoked), leave the admin area immediately.
+  const isAdmin = user?.role === "admin"
+  React.useEffect(() => {
+    if (!loading && user && !isAdmin) router.replace("/app")
+    if (!loading && !user) router.replace("/login")
+  }, [loading, user, isAdmin, router])
 
   const isActive = (href: string) => pathname === href || (href !== "/app/admin" && pathname.startsWith(href))
   const currentPage = navItems.find((i) => isActive(i.href))
   const closeMobile = () => setMobileOpen(false)
 
+  if (!isAdmin) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
+      </div>
+    )
+  }
+
   return (
+    <NotificationProvider userId={user?.id} isAdmin>
     <div className="flex min-h-screen bg-background">
       {/* Sidebar */}
       <aside
@@ -86,12 +111,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           ))}
         </nav>
 
-        <div className="flex-shrink-0 border-t border-border p-3">
+        <div className="flex-shrink-0 space-y-2 border-t border-border p-3">
+          <div className="flex items-center gap-3 rounded-lg bg-secondary/60 p-2">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary text-[13px] font-semibold text-primary-foreground">
+              {user?.name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || "A"}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13px] font-medium text-foreground">{user?.name || user?.email}</p>
+              <p className="text-[11px] text-muted-foreground">Administrator</p>
+            </div>
+          </div>
           <button
             onClick={async () => {
               try {
                 await fetch("/api/auth/signout", { method: "POST" })
               } finally {
+                clearCache()
                 window.location.href = "/login"
               }
             }}
@@ -120,13 +155,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--color-success)]" />
               <span className="text-[10px] font-semibold text-[var(--color-success)]">Live</span>
             </div>
-            <ThemeToggle />
             <AppSwitcher current="admin" />
+            <ThemeToggle />
+            <NotificationBell />
           </div>
         </header>
 
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 sm:px-6 sm:py-7">{children}</main>
+        <ToastNotification />
       </div>
     </div>
+    </NotificationProvider>
   )
 }

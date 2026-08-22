@@ -1,130 +1,134 @@
 "use client"
 
-
-import { Card, StatusPill, statusTone } from "@/components/ui"
-import { usePagination, Pagination } from "@/components/data-table"
 import * as React from "react"
+import { Card, StatusPill, statusTone } from "@/components/ui"
+import { Pagination } from "@/components/data-table"
+import { useCachedFetch } from "@/lib/use-cached-fetch"
+import { PageHeader, StatGrid, FilterBar, Skeleton, formatDate } from "../_components"
 
-const transactions = [
-  { id: "TXN-001", user: "Alex M.", type: "deposit", amount: 1000, fee: 0, net: 1000, status: "completed", date: "Apr 29, 2026" },
-  { id: "TXN-002", user: "John D.", type: "deposit", amount: 500, fee: 0, net: 500, status: "completed", date: "Apr 29, 2026" },
-  { id: "TXN-003", user: "Sarah K.", type: "return", amount: 8000, fee: 0, net: 8000, status: "completed", date: "Apr 28, 2026" },
-  { id: "TXN-004", user: "Mike R.", type: "withdrawal", amount: 500, fee: 82.5, net: 417.5, status: "completed", date: "Apr 27, 2026" },
-  { id: "TXN-005", user: "Lisa M.", type: "deposit", amount: 1500, fee: 0, net: 1500, status: "pending", date: "Apr 26, 2026" },
-  { id: "TXN-006", user: "Alex M.", type: "return", amount: 3200, fee: 0, net: 3200, status: "completed", date: "Apr 25, 2026" },
-]
+const PAGE_SIZE = 12
+type Filter = "all" | "deposit" | "investment" | "return" | "withdrawal"
+
+interface Tx {
+  id: string
+  user: string
+  userEmail: string
+  type: string
+  amount: number
+  fee: number
+  net: number
+  status: string
+  note: string | null
+  createdAt: string
+}
+interface TxResponse {
+  transactions: Tx[]
+  total: number
+  page: number
+  pageCount: number
+  stats: { deposits: number; returns: number; withdrawals: number }
+}
+
+const TYPE_STYLE: Record<string, string> = {
+  deposit: "bg-[var(--bg-success)] text-[var(--color-success)]",
+  investment: "bg-[var(--bg-success)] text-[var(--color-success)]",
+  return: "bg-[var(--bg-info)] text-[var(--color-info)]",
+  withdrawal: "bg-[var(--bg-danger)] text-destructive",
+}
 
 export default function TransactionsPage() {
-  const [filter, setFilter] = React.useState("all")
+  const [filter, setFilter] = React.useState<Filter>("all")
+  const [page, setPage] = React.useState(1)
+  const key = `/api/admin/transactions?page=${page}&pageSize=${PAGE_SIZE}&type=${filter}`
+  const { data, loading, refreshing } = useCachedFetch<TxResponse>(key, { ttl: 60_000 })
 
-  const filtered = transactions.filter(t => filter === "all" || t.type === filter)
+  const changeFilter = (f: Filter) => {
+    setFilter(f)
+    setPage(1)
+  }
 
-  const { pageItems, page, setPage, pageCount, total, start, end } = usePagination(filtered, 12)
+  if (loading || !data) return <Skeleton rows={6} />
 
-  const totalDeposits = transactions.filter(t => t.type === "deposit" && t.status === "completed").reduce((sum, t) => sum + t.net, 0)
-  const totalReturns = transactions.filter(t => t.type === "return").reduce((sum, t) => sum + t.net, 0)
-  const totalWithdrawn = transactions.filter(t => t.type === "withdrawal" && t.status === "completed").reduce((sum, t) => sum + t.net, 0)
+  const start = (data.page - 1) * PAGE_SIZE
+  const end = Math.min(data.page * PAGE_SIZE, data.total)
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-semibold text-foreground">Transactions</h1>
-        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">View all platform transactions</p>
-      </div>
+      <PageHeader title="Transactions" subtitle="All platform transactions" right={refreshing ? <span className="text-[11px] text-muted-foreground">Refreshing…</span> : undefined} />
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="p-3 text-center">
-          <div className="text-lg font-bold text-foreground">${totalDeposits.toLocaleString()}</div>
-          <div className="text-[10px] text-muted-foreground">Deposits</div>
-        </Card>
-        <Card className="p-3 text-center">
-          <div className="text-lg font-bold text-[var(--color-success)]">+${totalReturns.toLocaleString()}</div>
-          <div className="text-[10px] text-muted-foreground">Returns</div>
-        </Card>
-        <Card className="p-3 text-center">
-          <div className="text-lg font-bold text-destructive">-${totalWithdrawn.toLocaleString()}</div>
-          <div className="text-[10px] text-muted-foreground">Withdrawn</div>
-        </Card>
-      </div>
+      <StatGrid
+        items={[
+          { label: "Deposits", value: `$${data.stats.deposits.toLocaleString()}` },
+          { label: "Returns", value: `+$${data.stats.returns.toLocaleString()}`, className: "text-[var(--color-success)]" },
+          { label: "Withdrawn", value: `-$${data.stats.withdrawals.toLocaleString()}`, className: "text-destructive" },
+        ]}
+      />
 
-      {/* Filters */}
-      <Card className="p-3">
-        <div className="flex gap-2 flex-wrap">
-          {["all", "deposit", "return", "withdrawal"].map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all capitalize ${
-                filter === f
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-      </Card>
+      <FilterBar
+        value={filter}
+        onChange={changeFilter}
+        options={[
+          { key: "all", label: "All" },
+          { key: "investment", label: "Investments" },
+          { key: "deposit", label: "Deposits" },
+          { key: "return", label: "Returns" },
+          { key: "withdrawal", label: "Withdrawals" },
+        ]}
+      />
 
-      {/* Transactions Table */}
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[580px]">
+          <table className="w-full min-w-[640px]">
             <thead className="bg-secondary/50">
               <tr>
-                <th className="px-3 py-2.5 text-left text-[9px] font-mono uppercase text-muted-foreground">ID</th>
-                <th className="px-3 py-2.5 text-left text-[9px] font-mono uppercase text-muted-foreground">User</th>
-                <th className="px-3 py-2.5 text-left text-[9px] font-mono uppercase text-muted-foreground">Type</th>
-                <th className="px-3 py-2.5 text-right text-[9px] font-mono uppercase text-muted-foreground">Amount</th>
-                <th className="px-3 py-2.5 text-right text-[9px] font-mono uppercase text-muted-foreground">Fee</th>
-                <th className="px-3 py-2.5 text-right text-[9px] font-mono uppercase text-muted-foreground">Net</th>
-                <th className="px-3 py-2.5 text-left text-[9px] font-mono uppercase text-muted-foreground">Status</th>
-                <th className="px-3 py-2.5 text-left text-[9px] font-mono uppercase text-muted-foreground">Date</th>
+                <th className="px-3 py-2.5 text-left font-mono text-[9px] uppercase text-muted-foreground">User</th>
+                <th className="px-3 py-2.5 text-left font-mono text-[9px] uppercase text-muted-foreground">Type</th>
+                <th className="px-3 py-2.5 text-right font-mono text-[9px] uppercase text-muted-foreground">Amount</th>
+                <th className="px-3 py-2.5 text-right font-mono text-[9px] uppercase text-muted-foreground">Fee</th>
+                <th className="px-3 py-2.5 text-right font-mono text-[9px] uppercase text-muted-foreground">Net</th>
+                <th className="px-3 py-2.5 text-left font-mono text-[9px] uppercase text-muted-foreground">Status</th>
+                <th className="px-3 py-2.5 text-left font-mono text-[9px] uppercase text-muted-foreground">Date</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {pageItems.map((tx) => (
+              {data.transactions.map((tx) => (
                 <tr key={tx.id} className="hover:bg-secondary/30">
-                  <td className="px-3 py-2.5 text-[10px] font-mono text-muted-foreground">{tx.id}</td>
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-[9px] font-bold text-foreground">
-                        {tx.user.charAt(0)}
+                      <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-secondary text-[9px] font-bold text-foreground">
+                        {tx.user.charAt(0).toUpperCase()}
                       </div>
-                      <span className="text-xs text-foreground">{tx.user}</span>
+                      <div className="min-w-0">
+                        <div className="truncate text-xs text-foreground">{tx.user}</div>
+                        {tx.note && <div className="max-w-[220px] truncate text-[10px] text-muted-foreground">{tx.note}</div>}
+                      </div>
                     </div>
                   </td>
                   <td className="px-3 py-2.5">
-                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${
-                      tx.type === "deposit" ? "bg-[var(--bg-success)] text-[var(--color-success)]" :
-                      tx.type === "return" ? "bg-[var(--bg-info)] text-[var(--color-info)]" :
-                      "bg-[var(--bg-danger)] text-destructive"
-                    }`}>
-                      {tx.type}
-                    </span>
+                    <span className={`rounded px-2 py-0.5 text-[10px] font-medium capitalize ${TYPE_STYLE[tx.type] || "bg-secondary text-foreground"}`}>{tx.type}</span>
                   </td>
-                  <td className={`px-3 py-2.5 text-right text-xs font-medium ${
-                    tx.type === "return" ? "text-[var(--color-success)]" : "text-foreground"
-                  }`}>
-                    {tx.type === "return" ? "+" : tx.type === "withdrawal" ? "-" : ""}${tx.amount}
+                  <td className={`px-3 py-2.5 text-right text-xs font-medium tabular-nums ${tx.type === "return" ? "text-[var(--color-success)]" : "text-foreground"}`}>
+                    {tx.type === "return" ? "+" : tx.type === "withdrawal" ? "-" : ""}${tx.amount.toLocaleString()}
                   </td>
-                  <td className="px-3 py-2.5 text-right text-xs text-muted-foreground">
-                    {tx.fee > 0 ? `-$${tx.fee}` : "-"}
-                  </td>
-                  <td className="px-3 py-2.5 text-right text-xs font-medium text-foreground">${tx.net}</td>
+                  <td className="px-3 py-2.5 text-right text-xs tabular-nums text-muted-foreground">{tx.fee > 0 ? `-$${tx.fee.toLocaleString()}` : "—"}</td>
+                  <td className="px-3 py-2.5 text-right text-xs font-medium tabular-nums text-foreground">${tx.net.toLocaleString()}</td>
                   <td className="px-3 py-2.5">
                     <StatusPill tone={statusTone(tx.status)} className="capitalize">{tx.status}</StatusPill>
                   </td>
-                  <td className="px-3 py-2.5 text-[10px] text-muted-foreground">{tx.date}</td>
+                  <td className="px-3 py-2.5 text-[10px] text-muted-foreground">{formatDate(tx.createdAt)}</td>
                 </tr>
               ))}
+              {data.transactions.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-3 py-8 text-center text-sm text-muted-foreground">No transactions found</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </Card>
 
-      <Pagination page={page} pageCount={pageCount} onPageChange={setPage} total={total} start={start} end={end} className="mt-4" />
+      <Pagination page={data.page} pageCount={data.pageCount} onPageChange={setPage} total={data.total} start={start} end={end} className="mt-4" />
     </div>
   )
 }

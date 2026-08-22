@@ -4,6 +4,7 @@
 import { Card, StatusPill, statusTone } from "@/components/ui"
 import { Pagination } from "@/components/data-table"
 import * as React from "react"
+import { useCachedFetch, invalidateCache } from "@/lib/use-cached-fetch"
 
 const PAGE_SIZE = 10
 
@@ -25,36 +26,22 @@ interface Investment {
 interface Stats { all: number; pending: number; active: number; completed: number; rejected: number }
 
 export default function DepositsPage() {
-  const [investments, setInvestments] = React.useState<Investment[]>([])
-  const [loading, setLoading] = React.useState(true)
   const [filter, setFilter] = React.useState("pending")
   const [processing, setProcessing] = React.useState<string | null>(null)
   const [page, setPage] = React.useState(1)
-  const [total, setTotal] = React.useState(0)
-  const [pageCount, setPageCount] = React.useState(1)
-  const [stats, setStats] = React.useState<Stats>({ all: 0, pending: 0, active: 0, completed: 0, rejected: 0 })
 
+  const key = `/api/admin/investments?page=${page}&pageSize=${PAGE_SIZE}&status=${filter}`
+  const { data, loading, refresh } = useCachedFetch<{ investments: Investment[]; total: number; pageCount: number; stats: Stats }>(key, { ttl: 30_000 })
+  const investments = data?.investments ?? []
+  const total = data?.total ?? 0
+  const pageCount = data?.pageCount ?? 1
+  const stats: Stats = data?.stats ?? { all: 0, pending: 0, active: 0, completed: 0, rejected: 0 }
+
+  // Approve/reject changes counts everywhere — drop every cached admin list.
   const fetchInvestments = React.useCallback(async () => {
-    try {
-      const params = new URLSearchParams({ page: String(page), pageSize: String(PAGE_SIZE), status: filter })
-      const res = await fetch(`/api/admin/investments?${params.toString()}`)
-      if (res.ok) {
-        const data = await res.json()
-        setInvestments(data.investments || [])
-        setTotal(data.total || 0)
-        setPageCount(data.pageCount || 1)
-        if (data.stats) setStats(data.stats)
-      }
-    } catch (error) {
-      console.error('Failed to fetch investments:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [page, filter])
-
-  React.useEffect(() => {
-    fetchInvestments()
-  }, [fetchInvestments])
+    invalidateCache("/api/admin/")
+    await refresh()
+  }, [refresh])
 
   const changeFilter = (f: string) => {
     setFilter(f)
@@ -111,7 +98,7 @@ export default function DepositsPage() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
 
-  if (loading) {
+  if (loading || !data) {
     return (
       <div className="space-y-4 sm:space-y-6">
         <div className="h-8 w-32 bg-muted animate-pulse rounded" />

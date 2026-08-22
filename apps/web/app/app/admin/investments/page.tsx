@@ -1,132 +1,133 @@
 "use client"
 
-
-import { Card, StatusPill, statusTone } from "@/components/ui"
-import { usePagination, Pagination } from "@/components/data-table"
 import * as React from "react"
+import { Card, StatusPill, statusTone } from "@/components/ui"
+import { Pagination } from "@/components/data-table"
+import { useCachedFetch } from "@/lib/use-cached-fetch"
+import { PageHeader, StatGrid, FilterBar, Skeleton, formatDate } from "../_components"
 
-const investments = [
-  { id: "INV-001", user: "Alex M.", pool: "weekly", amount: 1000, roi: 8000, status: "active", progress: 45, daysLeft: 4, startDate: "Apr 25" },
-  { id: "INV-002", user: "John D.", pool: "daily", amount: 500, roi: 3200, status: "active", progress: 78, daysLeft: 0, startDate: "Apr 28" },
-  { id: "INV-003", user: "Sarah K.", pool: "weekly", amount: 2500, roi: 20000, status: "completed", progress: 100, daysLeft: 0, startDate: "Apr 15" },
-  { id: "INV-004", user: "Mike R.", pool: "daily", amount: 750, roi: 4800, status: "completed", progress: 100, daysLeft: 0, startDate: "Apr 20" },
-  { id: "INV-005", user: "Lisa M.", pool: "weekly", amount: 1500, roi: 12000, status: "active", progress: 20, daysLeft: 5, startDate: "Apr 24" },
-]
+const PAGE_SIZE = 10
+type Filter = "all" | "active" | "completed" | "pending" | "rejected"
+
+interface Investment {
+  id: string
+  userName: string
+  userEmail: string
+  amount: number
+  pool: string
+  roi: number
+  status: string
+  txHash: string | null
+  createdAt: string
+}
+interface InvResponse {
+  investments: Investment[]
+  total: number
+  page: number
+  pageCount: number
+  stats: { all: number; pending: number; active: number; completed: number; rejected: number }
+}
 
 export default function InvestmentsPage() {
-  const [filter, setFilter] = React.useState("all")
+  const [filter, setFilter] = React.useState<Filter>("all")
+  const [page, setPage] = React.useState(1)
+  const key = `/api/admin/investments?page=${page}&pageSize=${PAGE_SIZE}&status=${filter}`
+  const { data, loading, refreshing } = useCachedFetch<InvResponse>(key, { ttl: 60_000 })
 
-  const filtered = investments.filter(inv => filter === "all" || inv.status === filter)
+  const changeFilter = (f: Filter) => {
+    setFilter(f)
+    setPage(1)
+  }
 
-  const { pageItems, page, setPage, pageCount, total, start, end } = usePagination(filtered, 10)
+  if (loading || !data) return <Skeleton rows={5} />
 
-  const activeCount = investments.filter(i => i.status === "active").length
-  const completedCount = investments.filter(i => i.status === "completed").length
+  const start = (data.page - 1) * PAGE_SIZE
+  const end = Math.min(data.page * PAGE_SIZE, data.total)
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-semibold text-foreground">Investments</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Track all investment cycles</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground">Active:</span>
-          <span className="text-sm font-bold text-emerald-600">{activeCount}</span>
-        </div>
-      </div>
+      <PageHeader
+        title="Investments"
+        subtitle="Track all investment cycles"
+        right={
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            {refreshing && <span className="text-[11px]">Refreshing…</span>}
+            <span>
+              Active: <span className="text-sm font-bold text-[var(--color-success)]">{data.stats.active}</span>
+            </span>
+          </div>
+        }
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="p-3 text-center">
-          <div className="text-lg font-bold text-emerald-600">{activeCount}</div>
-          <div className="text-[10px] text-muted-foreground">Active</div>
-        </Card>
-        <Card className="p-3 text-center">
-          <div className="text-lg font-bold text-foreground">{completedCount}</div>
-          <div className="text-[10px] text-muted-foreground">Completed</div>
-        </Card>
-        <Card className="p-3 text-center">
-          <div className="text-lg font-bold text-foreground">{investments.length}</div>
-          <div className="text-[10px] text-muted-foreground">Total</div>
-        </Card>
-      </div>
+      <StatGrid
+        items={[
+          { label: "Active", value: data.stats.active, className: "text-[var(--color-success)]" },
+          { label: "Completed", value: data.stats.completed },
+          { label: "Total", value: data.stats.all },
+        ]}
+      />
 
-      {/* Filters */}
-      <Card className="p-3">
-        <div className="flex gap-2 flex-wrap">
-          {["all", "active", "completed"].map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all capitalize ${
-                filter === f
-                  ? "bg-[oklch(0.21_0_0)] text-[oklch(1_0_180)]"
-                  : "bg-secondary text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-      </Card>
+      <FilterBar
+        value={filter}
+        onChange={changeFilter}
+        options={[
+          { key: "all", label: "All" },
+          { key: "active", label: "Active" },
+          { key: "completed", label: "Completed" },
+          { key: "pending", label: "Pending" },
+          { key: "rejected", label: "Rejected" },
+        ]}
+      />
 
-      {/* Investments Table */}
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[500px]">
+          <table className="w-full min-w-[600px]">
             <thead className="bg-secondary/50">
               <tr>
-                <th className="px-3 py-2.5 text-left text-[9px] font-mono uppercase text-muted-foreground">User</th>
-                <th className="px-3 py-2.5 text-left text-[9px] font-mono uppercase text-muted-foreground">Pool</th>
-                <th className="px-3 py-2.5 text-right text-[9px] font-mono uppercase text-muted-foreground">Amount</th>
-                <th className="px-3 py-2.5 text-right text-[9px] font-mono uppercase text-muted-foreground">Target</th>
-                <th className="px-3 py-2.5 text-center text-[9px] font-mono uppercase text-muted-foreground">Progress</th>
-                <th className="px-3 py-2.5 text-left text-[9px] font-mono uppercase text-muted-foreground">Status</th>
+                <th className="px-3 py-2.5 text-left font-mono text-[9px] uppercase text-muted-foreground">User</th>
+                <th className="px-3 py-2.5 text-left font-mono text-[9px] uppercase text-muted-foreground">Pool</th>
+                <th className="px-3 py-2.5 text-right font-mono text-[9px] uppercase text-muted-foreground">Amount</th>
+                <th className="px-3 py-2.5 text-right font-mono text-[9px] uppercase text-muted-foreground">Target</th>
+                <th className="px-3 py-2.5 text-left font-mono text-[9px] uppercase text-muted-foreground">Status</th>
+                <th className="px-3 py-2.5 text-left font-mono text-[9px] uppercase text-muted-foreground">Started</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {pageItems.map((inv) => (
+              {data.investments.map((inv) => (
                 <tr key={inv.id} className="hover:bg-secondary/30">
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-[9px] font-bold text-foreground">
-                        {inv.user.charAt(0)}
+                      <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-secondary text-[9px] font-bold text-foreground">
+                        {inv.userName.charAt(0).toUpperCase()}
                       </div>
-                      <span className="text-xs text-foreground">{inv.user}</span>
+                      <div className="min-w-0">
+                        <div className="truncate text-xs text-foreground">{inv.userName}</div>
+                        <div className="truncate text-[10px] text-muted-foreground">{inv.userEmail}</div>
+                      </div>
                     </div>
                   </td>
-                  <td className="px-3 py-2.5">
-                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${
-                      inv.pool === "weekly" ? "bg-purple-500/15 text-purple-600 dark:text-purple-400" : "bg-blue-500/15 text-blue-600 dark:text-blue-400"
-                    }`}>
-                      {inv.pool}
-                    </span>
+                  <td className="px-3 py-2.5 text-xs text-foreground">
+                    {inv.pool === "daily" ? "24H" : "Weekly"} <span className="text-[10px] text-muted-foreground">· {inv.roi}x</span>
                   </td>
-                  <td className="px-3 py-2.5 text-right text-xs font-medium text-foreground">${inv.amount}</td>
-                  <td className="px-3 py-2.5 text-right text-xs font-medium text-emerald-600">${inv.roi}</td>
-                  <td className="px-3 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-[var(--color-success)] rounded-full"
-                          style={{ width: `${inv.progress}%` }}
-                        />
-                      </div>
-                      <span className="text-[10px] text-muted-foreground w-8">{inv.progress}%</span>
-                    </div>
-                  </td>
+                  <td className="px-3 py-2.5 text-right text-xs font-medium tabular-nums text-foreground">${inv.amount.toLocaleString()}</td>
+                  <td className="px-3 py-2.5 text-right text-xs font-medium tabular-nums text-[var(--color-success)]">${Math.round(inv.amount * inv.roi).toLocaleString()}</td>
                   <td className="px-3 py-2.5">
                     <StatusPill tone={statusTone(inv.status)} className="capitalize">{inv.status}</StatusPill>
                   </td>
+                  <td className="px-3 py-2.5 text-[10px] text-muted-foreground">{formatDate(inv.createdAt)}</td>
                 </tr>
               ))}
+              {data.investments.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-3 py-8 text-center text-sm text-muted-foreground">No investments found</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </Card>
 
-      <Pagination page={page} pageCount={pageCount} onPageChange={setPage} total={total} start={start} end={end} className="mt-4" />
+      <Pagination page={data.page} pageCount={data.pageCount} onPageChange={setPage} total={data.total} start={start} end={end} className="mt-4" />
     </div>
   )
 }
