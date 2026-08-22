@@ -5,13 +5,14 @@ import { Card } from "@/components/ui"
 import * as React from "react"
 import Link from "next/link"
 import { invalidateCache } from "@/lib/use-cached-fetch"
-
-const BINANCE_WALLET = "TP3HUdgXCsVBwnRARKEouqYo9USdZTUcbg"
+import { DEPOSIT_NETWORKS, depositNetwork, type DepositNetworkKey } from "@/lib/deposit-addresses"
 
 export default function InvestmentsPage() {
   const [copiedAddress, setCopiedAddress] = React.useState(false)
   const [amount, setAmount] = React.useState("")
   const [selectedPlan, setSelectedPlan] = React.useState("weekly")
+  const [network, setNetwork] = React.useState<DepositNetworkKey>("TRC20")
+  const wallet = depositNetwork(network)
   const [txHash, setTxHash] = React.useState("")
   const [notes, setNotes] = React.useState("")
   const [showConfirm, setShowConfirm] = React.useState(false)
@@ -20,7 +21,7 @@ export default function InvestmentsPage() {
   const [submitSuccess, setSubmitSuccess] = React.useState(false)
 
   const copyAddress = () => {
-    navigator.clipboard.writeText(BINANCE_WALLET)
+    navigator.clipboard.writeText(wallet.address)
     setCopiedAddress(true)
     setTimeout(() => setCopiedAddress(false), 2000)
   }
@@ -37,7 +38,7 @@ export default function InvestmentsPage() {
           amount: parseFloat(amount),
           pool: selectedPlan,
           txHash: txHash.trim(),
-          network: "TRC20",
+          network,
           notes,
         }),
       })
@@ -50,7 +51,7 @@ export default function InvestmentsPage() {
       }
 
       const roi = selectedPlan === "weekly" ? "8x" : "6.4x"
-      const message = `🎯 *New Stake Request*\n\n*Plan:* ${selectedPlan === "weekly" ? "Weekly Pool" : "24H Pool"} (${roi} ROI)\n*Amount:* $${amount}\n*Network:* USDT (TRC20)\n*TX Hash:* ${txHash}\n*DB ID:* ${data.investment?.id}\n${notes ? `\n*Notes:* ${notes}` : ""}`
+      const message = `🎯 *New Stake Request*\n\n*Plan:* ${selectedPlan === "weekly" ? "Weekly Pool" : "24H Pool"} (${roi} ROI)\n*Amount:* $${amount}\n*Network:* ${wallet.label}\n*TX Hash:* ${txHash}\n*DB ID:* ${data.investment?.id}\n${notes ? `\n*Notes:* ${notes}` : ""}`
       const telegramUrl = `https://t.me/khan_bashiri?text=${encodeURIComponent(message)}`
       window.open(telegramUrl, "_blank")
 
@@ -146,12 +147,33 @@ export default function InvestmentsPage() {
           {/* Wallet Address */}
           <div>
             <label className="mb-2 block text-xs font-medium text-foreground sm:text-sm">
-              Deposit Address (Binance)
+              Pay with
+            </label>
+            <div className="mb-3 grid grid-cols-2 gap-2">
+              {DEPOSIT_NETWORKS.map((n) => (
+                <button
+                  key={n.key}
+                  type="button"
+                  onClick={() => {
+                    setNetwork(n.key)
+                    setCopiedAddress(false)
+                  }}
+                  className={`rounded-lg border px-3 py-2.5 text-left transition-all ${
+                    network === n.key ? "border-[oklch(0.21_0_0)] bg-card ring-2 ring-[oklch(0.21_0_0)]" : "border-border bg-card hover:bg-secondary/50"
+                  }`}
+                >
+                  <div className="text-xs font-medium text-foreground sm:text-sm">{n.label}</div>
+                  <div className="text-[10px] text-muted-foreground">{n.chain}</div>
+                </button>
+              ))}
+            </div>
+            <label className="mb-2 block text-xs font-medium text-foreground sm:text-sm">
+              {wallet.asset} deposit address · {wallet.chain}
             </label>
             <div className="rounded-lg border border-border bg-secondary/30 p-2.5 sm:p-3.5">
               <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
-                <code className="font-mono text-[10px] break-all text-foreground sm:text-xs">
-                  {BINANCE_WALLET}
+                <code className="font-mono text-[10px] break-all text-foreground sm:text-xs" data-testid="deposit-address">
+                  {wallet.address}
                 </code>
                 <button
                   type="button"
@@ -194,8 +216,7 @@ export default function InvestmentsPage() {
           {/* Warning */}
           <div className="rounded-lg border border-[oklch(0.6_0_0)/0.15] bg-[oklch(0.6_0_0)/0.08] p-3">
             <p className="text-[10px] text-foreground sm:text-xs">
-              <span className="font-medium">Important:</span> Send exact amount.
-              After sending, fill details below and submit.
+              <span className="font-medium">Important:</span> {wallet.hint} Send the exact amount, then fill in the details below and submit.
             </p>
           </div>
 
@@ -219,7 +240,7 @@ export default function InvestmentsPage() {
                 Network
               </label>
               <div className="w-full rounded-lg border border-border bg-secondary/30 px-3 py-2.5 text-sm text-muted-foreground sm:px-4 sm:py-3 sm:text-base">
-                USDT (TRC20)
+                {wallet.label}
               </div>
             </div>
           </div>

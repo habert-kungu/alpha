@@ -203,7 +203,7 @@ ${button(appUrl("/app/transactions"), "View status")}`),
   })
 }
 
-export function newDepositAdminEmail(opts: { userEmail: string; userName?: string | null; amount: number; pool: string; txHash: string; investmentId: string }) {
+export function newDepositAdminEmail(opts: { userEmail: string; userName?: string | null; amount: number; pool: string; txHash: string; investmentId: string; network?: string }) {
   const to = process.env.ADMIN_EMAIL
   if (!to) return Promise.resolve({ sent: false, error: "ADMIN_EMAIL not set" })
   return sendMail({
@@ -212,6 +212,7 @@ export function newDepositAdminEmail(opts: { userEmail: string; userName?: strin
     html: layout("New deposit request", `<p><strong>${escape(opts.userName || opts.userEmail)}</strong> (${escape(opts.userEmail)}) submitted a ${opts.pool === "daily" ? "24H" : "Weekly"} Pool deposit.</p>
 <p style="margin:16px 0;padding:12px 14px;background:#f4f5f7;border-radius:8px;font-family:ui-monospace,Menlo,monospace;font-size:13px">
   <strong>Amount:</strong> $${opts.amount.toLocaleString()}<br/>
+  <strong>Network:</strong> ${escape(opts.network || "TRC20")}<br/>
   <strong>TX:</strong> ${escape(opts.txHash)}<br/>
   <strong>ID:</strong> ${escape(opts.investmentId)}
 </p>

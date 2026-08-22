@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSessionUser } from '@/lib/auth'
 import { newDepositAdminEmail, depositReceivedEmail } from '@/lib/mail'
 import { triggerNotification, CHANNELS, EVENTS } from '@/lib/pusher'
+import { DEPOSIT_NETWORK_KEYS } from '@/lib/deposit-addresses'
 import prisma from '@/lib/db'
 
 const POOL_CONFIG = {
@@ -49,6 +50,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const selectedNetwork = typeof network === 'string' && DEPOSIT_NETWORK_KEYS.includes(network) ? network : 'TRC20'
+
     if (!['daily', 'weekly'].includes(pool)) {
       return NextResponse.json(
         { error: 'Invalid pool selection' },
@@ -65,7 +68,7 @@ export async function POST(request: NextRequest) {
         pool,
         amount: parsedAmount,
         txHash: txHash.trim(),
-        network: network || 'TRC20',
+        network: selectedNetwork,
         status: 'pending',
         roi,
       },
@@ -99,6 +102,7 @@ export async function POST(request: NextRequest) {
       pool,
       txHash: txHash.trim(),
       investmentId: investment.id,
+      network: selectedNetwork,
     })
     void triggerNotification(CHANNELS.ADMIN, EVENTS.INVESTMENT_CREATED, {
       investmentId: investment.id,
