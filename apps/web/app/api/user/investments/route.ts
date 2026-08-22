@@ -5,7 +5,7 @@ import { triggerNotification, CHANNELS, EVENTS } from '@/lib/pusher'
 import { DEPOSIT_NETWORK_KEYS } from '@/lib/deposit-addresses'
 import prisma from '@/lib/db'
 
-import { POOLS } from '@/lib/trading'
+import { POOLS, MIN_DEPOSIT_USD, MAX_DEPOSIT_USD } from '@/lib/trading'
 
 const POOL_CONFIG = {
   daily: { roi: POOLS.daily.roiMultiplier, durationDays: POOLS.daily.durationDays },
@@ -31,14 +31,14 @@ export async function POST(request: NextRequest) {
     }
 
     const parsedAmount = parseFloat(amount)
-    if (isNaN(parsedAmount) || parsedAmount < 50) {
+    if (isNaN(parsedAmount) || parsedAmount < MIN_DEPOSIT_USD) {
       return NextResponse.json(
-        { error: 'Minimum investment is $50' },
+        { error: `Minimum investment is $${MIN_DEPOSIT_USD.toLocaleString()}` },
         { status: 400 }
       )
     }
 
-    if (parsedAmount > 1000000) {
+    if (parsedAmount > MAX_DEPOSIT_USD) {
       return NextResponse.json(
         { error: 'Maximum investment is $1,000,000' },
         { status: 400 }

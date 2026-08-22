@@ -6,7 +6,7 @@ import * as React from "react"
 import Link from "next/link"
 import { invalidateCache } from "@/lib/use-cached-fetch"
 import { DEPOSIT_NETWORKS, depositNetwork, type DepositNetworkKey } from "@/lib/deposit-addresses"
-import { POOLS } from "@/lib/trading"
+import { POOLS, MIN_DEPOSIT_USD } from "@/lib/trading"
 
 export default function InvestmentsPage() {
   const [copiedAddress, setCopiedAddress] = React.useState(false)
@@ -158,14 +158,14 @@ export default function InvestmentsPage() {
                 <input
                   type="number"
                   inputMode="decimal"
-                  min={50}
+                  min={MIN_DEPOSIT_USD}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="500"
                   className={`${fieldCls} pl-7 sm:pl-8`}
                 />
               </div>
-              <p className="mt-1 text-[10px] text-muted-foreground">Minimum $50</p>
+              <p className="mt-1 text-[10px] text-muted-foreground">Minimum ${MIN_DEPOSIT_USD.toLocaleString()}</p>
             </div>
 
             <div>
@@ -281,7 +281,7 @@ export default function InvestmentsPage() {
           <button
             type="button"
             onClick={() => setShowConfirm(true)}
-            disabled={!amount || !txHash || submitting}
+            disabled={!amount || parseFloat(amount) < MIN_DEPOSIT_USD || !txHash || submitting}
             className="w-full rounded-lg bg-[var(--color-success)] py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:py-3.5 sm:text-base"
           >
             {submitting ? "Submitting…" : `Submit ${wallet.asset} deposit`}

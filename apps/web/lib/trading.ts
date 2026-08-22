@@ -20,6 +20,9 @@ export const POOLS: Record<PoolType, PoolConfig> = {
   },
 }
 
+export const MIN_DEPOSIT_USD = 500
+export const MAX_DEPOSIT_USD = 1_000_000
+
 export const WITHDRAWAL_TAX_RATE = 0.165 // 16.5%
 
 /** Human label for a stored pool key. */
