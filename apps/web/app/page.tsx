@@ -250,15 +250,15 @@ function Hero() {
               {/* Stats */}
               <div className="hero-text mx-auto grid max-w-md grid-cols-3 gap-6 lg:mx-0">
                 <div className="text-center lg:text-left">
-                  <div className="text-2xl font-bold text-white">10x</div>
+                  <div className="text-2xl font-medium tabular-nums text-white">10x</div>
                   <div className="text-xs text-white/70">48H Returns</div>
                 </div>
                 <div className="text-center lg:text-left">
-                  <div className="text-2xl font-bold text-white">10x</div>
+                  <div className="text-2xl font-medium tabular-nums text-white">10x</div>
                   <div className="text-xs text-white/70">Weekly Returns</div>
                 </div>
                 <div className="text-center lg:text-left">
-                  <div className="text-2xl font-bold text-white">100%</div>
+                  <div className="text-2xl font-medium tabular-nums text-white">100%</div>
                   <div className="text-xs text-white/70">Success Rate</div>
                 </div>
               </div>
@@ -535,7 +535,7 @@ function Counter({ value, prefix }: { value: number; prefix: string }) {
   return (
     <div
       ref={ref}
-      className="scale-0 font-mono text-3xl leading-tight font-bold text-primary md:text-4xl"
+      className="scale-0 font-mono text-3xl leading-tight font-medium tabular-nums text-primary md:text-4xl"
     >
       {prefix}
       {displayValue}
@@ -700,7 +700,7 @@ function PlanCard({
           <div
             className={`self-start rounded-full px-3 py-1.5 sm:self-auto md:px-5 md:py-2.5 ${popular ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground"}`}
           >
-            <span className="text-base font-bold whitespace-nowrap md:text-lg">
+            <span className="text-base font-medium whitespace-nowrap md:text-lg">
               {roi}
             </span>
           </div>
@@ -719,10 +719,10 @@ function PlanCard({
                 className="grid cursor-pointer grid-cols-3 rounded-lg py-2 text-sm transition-colors hover:bg-card"
               >
                 <span className="text-muted-foreground">${tier.deposit}</span>
-                <span className="font-semibold text-primary">
+                <span className="font-medium tabular-nums text-primary">
                   ${tier.return}
                 </span>
-                <span className="font-medium text-[var(--color-success)]">
+                <span className="font-medium tabular-nums text-[var(--color-success)]">
                   +${tier.profit}
                 </span>
               </div>
@@ -972,7 +972,7 @@ function Services() {
               </div>
 
               <div className="mb-4">
-                <span className="text-3xl font-bold text-primary">
+                <span className="text-3xl font-medium tabular-nums text-primary">
                   {service.price}
                 </span>
                 <span className="ml-2 text-xs text-muted-foreground">
