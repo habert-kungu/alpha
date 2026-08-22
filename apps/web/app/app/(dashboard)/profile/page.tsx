@@ -40,19 +40,6 @@ function handleFor(p: Profile["user"]) {
   return `@${p.email.split("@")[0]}`
 }
 
-function Banner({ children }: { children?: React.ReactNode }) {
-  return (
-    <div className="relative h-28 overflow-hidden sm:h-40">
-      <div className="absolute inset-0 bg-[linear-gradient(120deg,oklch(0.25_0.06_250),oklch(0.45_0.14_24)_55%,oklch(0.7_0.12_178))] opacity-90" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.25),transparent_55%)]" />
-      <svg className="absolute inset-0 h-full w-full opacity-30" viewBox="0 0 600 160" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M0,120 C80,60 140,140 220,100 C300,60 360,120 440,80 C520,40 560,110 600,70 L600,160 L0,160 Z" fill="rgba(255,255,255,0.18)" />
-        <path d="M0,140 C100,100 160,150 260,120 C360,90 420,140 520,110 C560,98 580,105 600,100 L600,160 L0,160 Z" fill="rgba(0,0,0,0.18)" />
-      </svg>
-      {children}
-    </div>
-  )
-}
 
 export default function ProfilePage() {
   const { user: session, setUser } = useAuth()
@@ -140,7 +127,8 @@ export default function ProfilePage() {
   if (loading || !data) {
     return (
       <div className="space-y-4">
-        <div className="h-40 animate-pulse rounded-xl bg-muted sm:h-52" />
+        <div className="h-8 w-32 animate-pulse rounded bg-muted" />
+        <div className="h-44 animate-pulse rounded-xl bg-muted" />
         <div className="grid grid-cols-4 gap-3">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-16 animate-pulse rounded-lg bg-muted" />
@@ -157,23 +145,25 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-foreground sm:text-2xl">Profile</h1>
+          <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">Manage your account</p>
+        </div>
+        <Link href="/app" className="text-xs text-muted-foreground hover:text-foreground">← Back to Dashboard</Link>
+      </div>
+
       {/* Header card */}
       <Card className="overflow-hidden">
-        <Banner>
-          <Link href="/app" className="absolute left-3 top-3 rounded-full bg-black/30 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm hover:bg-black/45">
-            ← Dashboard
-          </Link>
-        </Banner>
-
-        <div className="px-4 pb-4 sm:px-6 sm:pb-6">
-          <div className="-mt-10 flex items-end justify-between sm:-mt-14">
-            <div className="relative z-10 flex h-20 w-20 items-center justify-center rounded-full border-4 border-card bg-[linear-gradient(135deg,oklch(0.45_0.08_250),oklch(0.2_0.02_265))] text-2xl font-bold text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)] ring-1 ring-border sm:h-28 sm:w-28 sm:text-4xl">
+        <div className="p-4 sm:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-primary text-lg font-semibold text-primary-foreground sm:h-16 sm:w-16 sm:text-xl">
               {initials(p.name, p.email)}
             </div>
             {!editing && (
               <button
                 onClick={startEdit}
-                className="rounded-full border border-border bg-card px-4 py-1.5 text-[13px] font-semibold text-foreground transition-colors hover:bg-secondary"
+                className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-secondary sm:text-[13px]"
               >
                 Edit profile
               </button>
@@ -183,7 +173,7 @@ export default function ProfilePage() {
           {!editing ? (
             <div className="mt-3">
               <div className="flex flex-wrap items-center gap-1.5">
-                <h1 className="text-xl font-bold leading-tight text-foreground sm:text-2xl">{displayName}</h1>
+                <h2 className="text-lg font-semibold leading-tight text-foreground sm:text-xl">{displayName}</h2>
                 <VerifiedBadge className="h-5 w-5 sm:h-6 sm:w-6" />
                 {p.role === "admin" && (
                   <span className="ml-1 rounded-full bg-[var(--bg-info)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--color-info)]">Admin</span>
@@ -237,10 +227,10 @@ export default function ProfilePage() {
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-1">
-                <button type="button" onClick={() => setEditing(false)} disabled={saving} className="rounded-full border border-border px-4 py-1.5 text-[13px] font-medium text-muted-foreground hover:bg-secondary hover:text-foreground">
+                <button type="button" onClick={() => setEditing(false)} disabled={saving} className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground">
                   Cancel
                 </button>
-                <button type="submit" disabled={saving} className="rounded-full bg-foreground px-4 py-1.5 text-[13px] font-semibold text-background hover:opacity-90 disabled:opacity-50">
+                <button type="submit" disabled={saving} className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
                   {saving ? "Saving…" : "Save"}
                 </button>
               </div>
@@ -300,7 +290,7 @@ export default function ProfilePage() {
                   <input className={inputCls} type="password" value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} required minLength={6} autoComplete="new-password" />
                 </div>
                 <div className="flex justify-end sm:col-span-3">
-                  <button type="submit" disabled={pwBusy} className="rounded-full bg-foreground px-4 py-1.5 text-[13px] font-semibold text-background hover:opacity-90 disabled:opacity-50">
+                  <button type="submit" disabled={pwBusy} className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
                     {pwBusy ? "Updating…" : "Update password"}
                   </button>
                 </div>
