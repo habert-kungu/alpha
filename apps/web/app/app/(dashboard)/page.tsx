@@ -232,17 +232,20 @@ export default function DashboardPage() {
     prevValueRef.current = currentDisplayValue
   }, [currentDisplayValue])
 
-  // Y-domain fits the realized ticks + the entry line (NOT the far-away target),
-  // so the price volatility fills the vertical space like a real market chart.
-  const domainSeries = chartData.length > 0 ? [...chartData, startValue] : [startValue, currentDisplayValue]
-  // Keep at least a ±6% band around entry so early-cycle noise reads as noise,
-  // not as a crash filling the whole chart.
-  const rawMin = Math.min(...domainSeries, startValue * 0.96)
-  const rawMax = Math.max(...domainSeries, startValue * 1.04)
-  const pad = (rawMax - rawMin || Math.max(1, rawMax * 0.02)) * 0.14
-  const minValue = rawMin - pad
-  const maxValue = rawMax + pad
+  // Y-domain auto-scales to the VISIBLE ticks (like Deriv), not to entry or
+  // target — once price has moved away from entry, the window follows the
+  // action so every tick fills vertical space. A small floor (±1.5% of price)
+  // keeps a brand-new, barely-moved cycle from looking like a seismograph.
+  const domainSeries = chartData.length > 0 ? chartData : [currentDisplayValue || startValue]
+  const level = Math.max(1, currentDisplayValue || startValue)
+  const seriesMin = Math.min(...domainSeries)
+  const seriesMax = Math.max(...domainSeries)
+  const mid = (seriesMin + seriesMax) / 2
+  const halfSpan = Math.max((seriesMax - seriesMin) / 2, level * 0.015)
+  const minValue = mid - halfSpan * 1.25
+  const maxValue = mid + halfSpan * 1.25
   const valueRange = maxValue - minValue || 1
+  const entryInView = startValue >= minValue && startValue <= maxValue
 
   // Chart coordinate space is 0..300 wide, 0..200 tall.
   const yFor = (v: number) => 200 - ((v - minValue) / valueRange) * 180
@@ -459,7 +462,9 @@ export default function DashboardPage() {
                     </defs>
 
                     {/* Entry reference line (horizontal at the start value) */}
-                    <line x1="0" y1={yFor(startValue)} x2="300" y2={yFor(startValue)} stroke="var(--chart-grid)" strokeWidth="1" strokeDasharray="3,4" vectorEffect="non-scaling-stroke" />
+                    {entryInView && (
+                      <line x1="0" y1={yFor(startValue)} x2="300" y2={yFor(startValue)} stroke="var(--chart-grid)" strokeWidth="1" strokeDasharray="3,4" vectorEffect="non-scaling-stroke" />
+                    )}
 
                     <g clipPath="url(#chartReveal)">
                     {/* Realized area fill (start -> now) */}
@@ -522,12 +527,12 @@ export default function DashboardPage() {
                     ${currentDisplayValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
 
-                  {/* Entry tag on the reference line */}
+                  {/* Entry tag: on the reference line while in view, otherwise pinned bottom-left */}
                   <div
                     className="pointer-events-none absolute left-1 -translate-y-1/2 rounded bg-card/80 px-1 font-mono text-[9px] text-muted-foreground"
-                    style={{ top: `${entryTopPct}%` }}
+                    style={{ top: entryInView ? `${entryTopPct}%` : "calc(100% - 8px)" }}
                   >
-                    Entry ${Math.round(startValue).toLocaleString()}
+                    Entry ${Math.round(startValue).toLocaleString()}{entryInView ? "" : " ↓"}
                   </div>
 
                   {/* Session high (Y-max) label, top-left */}
