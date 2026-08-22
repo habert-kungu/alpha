@@ -77,178 +77,378 @@ function stripHtml(html: string): string {
     .trim()
 }
 
+// ---------------------------------------------------------------------------
+// Design system
+// ---------------------------------------------------------------------------
+
+const BRAND = {
+  red: "#E2403F",
+  ink: "#111418",
+  text: "#2F3640",
+  muted: "#6B7280",
+  line: "#E6E8EC",
+  panel: "#F6F7F9",
+  bg: "#EEF0F3",
+  green: "#0F9D7A",
+  amber: "#B7791F",
+}
+const SUPPORT_TELEGRAM = "https://t.me/khan_bashiri"
+const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
+
 function escape(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
 }
 
-/** Minimal, inline-styled layout that renders consistently across mail clients. */
-function layout(title: string, body: string): string {
-  return `<!doctype html>
-<html><body style="margin:0;padding:0;background:#f4f5f7;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#111">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f5f7;padding:32px 12px">
-    <tr><td align="center">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;background:#fff;border-radius:12px;border:1px solid #e6e8eb">
-        <tr><td style="padding:24px 28px 0;font-size:15px;font-weight:600;letter-spacing:-0.01em">${APP_NAME}</td></tr>
-        <tr><td style="padding:20px 28px 0;font-size:20px;font-weight:600">${escape(title)}</td></tr>
-        <tr><td style="padding:12px 28px 28px;font-size:14px;line-height:1.6;color:#333">${body}</td></tr>
-      </table>
-      <p style="max-width:520px;margin:16px auto 0;font-size:12px;color:#888;text-align:center">
-        You're receiving this because you have an ${APP_NAME} account. If this wasn't you, you can safely ignore this email.
-      </p>
-    </td></tr>
-  </table>
-</body></html>`
+export function money(n: number, digits = 0): string {
+  return `$${n.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits })}`
+}
+
+function greeting(name?: string | null): string {
+  return `<p style="margin:0 0 14px">${name ? `Hi ${escape(name)},` : "Hello,"}</p>`
+}
+
+function p(html: string): string {
+  return `<p style="margin:0 0 14px">${html}</p>`
+}
+
+/** Label/value rows in a soft panel — for amounts, references, credentials. */
+function details(rows: [string, string][]): string {
+  const tr = rows
+    .map(
+      ([k, v], i) => `<tr>
+  <td style="padding:10px 16px;font-size:13px;color:${BRAND.muted};border-top:${i ? `1px solid ${BRAND.line}` : "0"};white-space:nowrap">${escape(k)}</td>
+  <td align="right" style="padding:10px 16px;font-size:14px;font-weight:600;color:${BRAND.ink};border-top:${i ? `1px solid ${BRAND.line}` : "0"};word-break:break-all">${v}</td>
+</tr>`
+    )
+    .join("")
+  return `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:18px 0;background:${BRAND.panel};border:1px solid ${BRAND.line};border-radius:10px;border-collapse:separate;overflow:hidden">${tr}</table>`
+}
+
+/** Monospace credential/reference block. */
+function code(v: string): string {
+  return `<span style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px">${escape(v)}</span>`
+}
+
+function note(html: string, tone: "info" | "warn" = "info"): string {
+  const color = tone === "warn" ? BRAND.amber : BRAND.muted
+  const bg = tone === "warn" ? "#FFF8E6" : BRAND.panel
+  return `<p style="margin:18px 0 0;padding:12px 14px;background:${bg};border-left:3px solid ${color};border-radius:6px;font-size:13px;line-height:1.55;color:${BRAND.text}">${html}</p>`
 }
 
 function button(href: string, label: string): string {
-  return `<p style="margin:20px 0"><a href="${href}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:11px 18px;border-radius:8px;font-weight:600;font-size:14px">${escape(label)}</a></p>
-<p style="font-size:12px;color:#666;word-break:break-all">Or copy this link: ${href}</p>`
+  return `<table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0 6px"><tr><td style="border-radius:8px;background:${BRAND.red}">
+  <a href="${href}" style="display:inline-block;padding:12px 22px;font-family:${FONT};font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px">${escape(label)}</a>
+</td></tr></table>
+<p style="margin:0 0 8px;font-size:12px;color:${BRAND.muted};word-break:break-all">If the button doesn't work, copy this link: <a href="${href}" style="color:${BRAND.muted}">${href}</a></p>`
+}
+
+/** Shared shell: hidden preheader, dark header band, white card, muted footer. */
+function layout(title: string, body: string, preheader?: string): string {
+  const site = appUrl()
+  const host = site.replace(/^https?:\/\//, "")
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(title)}</title></head>
+<body style="margin:0;padding:0;background:${BRAND.bg};font-family:${FONT};color:${BRAND.text};-webkit-font-smoothing:antialiased">
+${preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${escape(preheader)}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>` : ""}
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:${BRAND.bg}"><tr><td align="center" style="padding:32px 16px">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px">
+    <tr><td style="background:${BRAND.ink};border-radius:14px 14px 0 0;padding:20px 32px">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>
+        <td style="font-size:17px;font-weight:700;letter-spacing:-0.01em;color:#ffffff">
+          <span style="display:inline-block;width:18px;height:18px;margin-right:9px;vertical-align:-3px;border-radius:4px;background:${BRAND.red}"></span>AlphaReserve
+        </td>
+        <td align="right" style="font-size:11px;font-weight:600;letter-spacing:0.12em;color:#9AA3AE">POOL TRADING</td>
+      </tr></table>
+    </td></tr>
+    <tr><td style="background:#ffffff;border:1px solid ${BRAND.line};border-top:0;border-radius:0 0 14px 14px;padding:32px 32px 28px">
+      <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;font-weight:700;color:${BRAND.ink}">${escape(title)}</h1>
+      <div style="font-size:15px;line-height:1.65;color:${BRAND.text}">${body}</div>
+    </td></tr>
+    <tr><td style="padding:22px 12px 0;text-align:center;font-size:12px;line-height:1.7;color:${BRAND.muted}">
+      <a href="${site}" style="color:${BRAND.muted};text-decoration:none;font-weight:600">${escape(host)}</a>
+      &nbsp;·&nbsp; <a href="${SUPPORT_TELEGRAM}" style="color:${BRAND.muted}">Support on Telegram</a><br/>
+      You're receiving this because you have an AlphaReserve account. Trading involves risk — never invest more than you can afford to lose.
+    </td></tr>
+  </table>
+</td></tr></table>
+</body></html>`
+}
+
+function poolLabel(pool: string) {
+  return pool === "daily" ? "48-Hour Pool" : "Weekly Pool"
 }
 
 // ---------------------------------------------------------------------------
-// Templates
+// Templates — builders (previewable) + send wrappers
 // ---------------------------------------------------------------------------
 
-export function welcomeEmail(to: string, name?: string | null) {
-  const who = name ? `Hi ${escape(name)},` : "Hi,"
-  return sendMail({
-    to,
-    subject: `Welcome to ${APP_NAME}`,
-    html: layout("Welcome aboard", `<p>${who}</p>
-<p>Your ${APP_NAME} account is ready. Sign in to fund your first pool and track your returns in real time.</p>
-${button(appUrl("/login"), "Open your dashboard")}`),
-  })
-}
+export const buildWelcome = (to: string, name?: string | null): MailMessage => ({
+  to,
+  subject: "Welcome to AlphaReserve",
+  html: layout(
+    "Welcome aboard",
+    `${greeting(name)}
+${p("Your AlphaReserve account is ready. Fund your first pool, and our desk handles the trading — you track every cycle live from your dashboard.")}
+${details([
+  ["48-Hour Pool", "10x · profits paid within 48 hours"],
+  ["Weekly Pool", "10x · profits paid after 7 days"],
+  ["Minimum deposit", "$500 in USDT (TRC20) or BTC"],
+])}
+${button(appUrl("/app/investments"), "Make your first deposit")}
+${note("Questions before you start? Reply to this email or message the desk on Telegram — a real person answers.")}`,
+    "Your account is ready. Fund your first pool and track every cycle live."
+  ),
+})
 
-export function passwordResetEmail(to: string, token: string, name?: string | null) {
+export const buildPasswordReset = (to: string, token: string, name?: string | null): MailMessage => {
   const link = appUrl(`/reset-password?token=${encodeURIComponent(token)}`)
-  return sendMail({
+  return {
     to,
-    subject: `Reset your ${APP_NAME} password`,
-    html: layout("Reset your password", `<p>${name ? `Hi ${escape(name)},` : "Hi,"}</p>
-<p>We received a request to reset the password for this account. The link below is valid for <strong>1 hour</strong> and can only be used once.</p>
+    subject: "Reset your AlphaReserve password",
+    html: layout(
+      "Reset your password",
+      `${greeting(name)}
+${p("We received a request to reset the password on this account. Use the button below to choose a new one.")}
+${details([
+  ["Link valid for", "1 hour"],
+  ["Can be used", "once"],
+])}
 ${button(link, "Choose a new password")}
-<p style="color:#666">If you didn't request this, no action is needed — your password stays the same.</p>`),
-  })
+${note("Didn't request this? You can ignore this email — your password stays the same and nobody else can use this link.")}`,
+      "Use this link within 1 hour to choose a new password."
+    ),
+  }
 }
 
-export function passwordChangedEmail(to: string, name?: string | null) {
-  return sendMail({
-    to,
-    subject: `Your ${APP_NAME} password was changed`,
-    html: layout("Password changed", `<p>${name ? `Hi ${escape(name)},` : "Hi,"}</p>
-<p>The password for your account was just changed. If you made this change, you're all set.</p>
-<p>If you <strong>didn't</strong> change it, reset your password immediately and contact support.</p>
-${button(appUrl("/forgot-password"), "Secure my account")}`),
-  })
-}
+export const buildPasswordChanged = (to: string, name?: string | null): MailMessage => ({
+  to,
+  subject: "Your AlphaReserve password was changed",
+  html: layout(
+    "Password changed",
+    `${greeting(name)}
+${p("The password on your account was just changed, and every other device has been signed out.")}
+${p("If this was you, there's nothing else to do.")}
+${note("If you <strong>didn't</strong> make this change, reset your password right away and contact support so we can secure the account.", "warn")}
+${button(appUrl("/forgot-password"), "Secure my account")}`,
+    "Your password was changed and other devices were signed out."
+  ),
+})
 
-export function accountCreatedByAdminEmail(to: string, tempPassword: string, name?: string | null) {
-  return sendMail({
-    to,
-    subject: `Your ${APP_NAME} account`,
-    html: layout("Your account is ready", `<p>${name ? `Hi ${escape(name)},` : "Hi,"}</p>
-<p>An account was created for you on ${APP_NAME}. Sign in with the temporary password below and change it from your profile.</p>
-<p style="margin:16px 0;padding:12px 14px;background:#f4f5f7;border-radius:8px;font-family:ui-monospace,Menlo,monospace;font-size:14px">
-  <strong>Email:</strong> ${escape(to)}<br/>
-  <strong>Temporary password:</strong> ${escape(tempPassword)}
-</p>
-${button(appUrl("/login"), "Sign in")}`),
-  })
-}
-
-export function passwordResetByAdminEmail(to: string, tempPassword: string, name?: string | null) {
-  return sendMail({
-    to,
-    subject: `Your ${APP_NAME} password was reset`,
-    html: layout("Your password was reset", `<p>${name ? `Hi ${escape(name)},` : "Hi,"}</p>
-<p>An administrator reset the password on your account and you've been signed out everywhere. Sign in with the temporary password below, then choose a new one from <strong>Profile → Security</strong>.</p>
-<p style="margin:16px 0;padding:12px 14px;background:#f4f5f7;border-radius:8px;font-family:ui-monospace,Menlo,monospace;font-size:14px">
-  <strong>Email:</strong> ${escape(to)}<br/>
-  <strong>Temporary password:</strong> ${escape(tempPassword)}
-</p>
+export const buildAccountCreatedByAdmin = (to: string, tempPassword: string, name?: string | null): MailMessage => ({
+  to,
+  subject: "Your AlphaReserve account",
+  html: layout(
+    "Your account is ready",
+    `${greeting(name)}
+${p("An AlphaReserve account has been created for you. Sign in with the temporary password below, then set your own from <strong>Profile → Security</strong>.")}
+${details([
+  ["Email", code(to)],
+  ["Temporary password", code(tempPassword)],
+])}
 ${button(appUrl("/login"), "Sign in")}
-<p style="color:#666">If you weren't expecting this, contact support.</p>`),
-  })
-}
+${note("Keep this email private. The temporary password works until you change it.")}`,
+    "Your sign-in details for AlphaReserve."
+  ),
+})
 
-export function investmentDecisionEmail(
+export const buildPasswordResetByAdmin = (to: string, tempPassword: string, name?: string | null): MailMessage => ({
+  to,
+  subject: "Your AlphaReserve password was reset",
+  html: layout(
+    "Your password was reset",
+    `${greeting(name)}
+${p("An administrator reset the password on your account and signed you out of every device. Sign in with the temporary password below, then choose a new one from <strong>Profile → Security</strong>.")}
+${details([
+  ["Email", code(to)],
+  ["Temporary password", code(tempPassword)],
+])}
+${button(appUrl("/login"), "Sign in")}
+${note("If you weren't expecting this, contact support before signing in.", "warn")}`,
+    "An administrator reset your password. Sign in with the temporary password inside."
+  ),
+})
+
+export const buildDepositReceived = (
+  to: string,
+  opts: { amount: number; pool: string; txHash: string; investmentId: string; roi: number; network?: string; name?: string | null }
+): MailMessage => ({
+  to,
+  subject: `Deposit received — ${money(opts.amount)} ${poolLabel(opts.pool)} (pending review)`,
+  html: layout(
+    "We've received your deposit request",
+    `${greeting(opts.name)}
+${p(`Your <strong>${poolLabel(opts.pool)}</strong> deposit has been submitted and is <strong>pending review</strong>. We match the transaction on-chain and activate your cycle — usually within the hour during trading sessions.`)}
+${details([
+  ["Amount", money(opts.amount)],
+  ["Plan", `${poolLabel(opts.pool)} · ${opts.roi}x`],
+  ["Target return", money(Math.round(opts.amount * opts.roi))],
+  ["Network", escape(opts.network || "USDT (TRC20)")],
+  ["Transaction", code(opts.txHash)],
+  ["Reference", code(opts.investmentId)],
+])}
+${button(appUrl("/app/transactions"), "View status")}
+${note("You'll get another email the moment it's confirmed. Nothing else is needed from you.")}`,
+    `${money(opts.amount)} ${poolLabel(opts.pool)} deposit received — pending review.`
+  ),
+})
+
+export const buildInvestmentDecision = (
   to: string,
   opts: { approved: boolean; amount: number; pool: string; targetValue?: number; name?: string | null }
-) {
-  const poolLabel = opts.pool === "daily" ? "48H Pool" : "Weekly Pool"
-  const amount = `$${opts.amount.toLocaleString()}`
-  const body = opts.approved
-    ? `<p>${opts.name ? `Hi ${escape(opts.name)},` : "Hi,"}</p>
-<p>Your <strong>${poolLabel}</strong> deposit of <strong>${amount}</strong> has been confirmed and your cycle is now active${
-        opts.targetValue ? ` with a target of <strong>$${opts.targetValue.toLocaleString()}</strong>` : ""
-      }.</p>
-${button(appUrl("/app"), "Track your cycle")}`
-    : `<p>${opts.name ? `Hi ${escape(opts.name)},` : "Hi,"}</p>
-<p>We couldn't confirm your <strong>${poolLabel}</strong> deposit of <strong>${amount}</strong>. This usually means the transaction hash didn't match an incoming transfer.</p>
-<p>Please double-check the details and contact support if you believe this is a mistake.</p>
-${button(appUrl("/app/support"), "Contact support")}`
-  return sendMail({
-    to,
-    subject: opts.approved ? `Deposit confirmed — ${amount} ${poolLabel}` : `Deposit not confirmed — ${amount} ${poolLabel}`,
-    html: layout(opts.approved ? "Deposit confirmed" : "Deposit not confirmed", body),
-  })
+): MailMessage => {
+  const plan = poolLabel(opts.pool)
+  const amount = money(opts.amount)
+  return opts.approved
+    ? {
+        to,
+        subject: `Deposit confirmed — ${amount} ${plan} is now active`,
+        html: layout(
+          "Your deposit is confirmed",
+          `${greeting(opts.name)}
+${p(`Your <strong>${plan}</strong> deposit has been confirmed and your cycle is now <strong style="color:${BRAND.green}">active</strong>. You can follow it live on your dashboard.`)}
+${details([
+  ["Amount", amount],
+  ["Plan", plan],
+  ...(opts.targetValue ? [["Target return", money(opts.targetValue)] as [string, string]] : []),
+  ["Profits paid", opts.pool === "daily" ? "within 48 hours" : "after 7 days"],
+])}
+${button(appUrl("/app"), "Track your cycle")}`,
+          `${amount} ${plan} confirmed — your cycle is active.`
+        ),
+      }
+    : {
+        to,
+        subject: `Deposit not confirmed — ${amount} ${plan}`,
+        html: layout(
+          "We couldn't confirm your deposit",
+          `${greeting(opts.name)}
+${p(`We weren't able to match your <strong>${plan}</strong> deposit of <strong>${amount}</strong> to an incoming transfer. This usually means the transaction hash didn't match, or the funds were sent on a different network.`)}
+${details([
+  ["Amount", amount],
+  ["Plan", plan],
+  ["Status", `<span style="color:${BRAND.red}">Not confirmed</span>`],
+])}
+${p("If you believe this is a mistake, reply with your transaction hash and network and we'll take another look.")}
+${button(appUrl("/app/support"), "Contact support")}`,
+          `We couldn't confirm your ${amount} ${plan} deposit.`
+        ),
+      }
 }
 
-export function depositReceivedEmail(
-  to: string,
-  opts: { amount: number; pool: string; txHash: string; investmentId: string; roi: number; name?: string | null }
-) {
-  const poolLabel = opts.pool === "daily" ? "48H Pool" : "Weekly Pool"
-  const amount = `$${opts.amount.toLocaleString()}`
-  const target = `$${Math.round(opts.amount * opts.roi).toLocaleString()}`
-  return sendMail({
-    to,
-    subject: `Deposit received — ${amount} ${poolLabel} (pending review)`,
-    html: layout("We've received your deposit request", `<p>${opts.name ? `Hi ${escape(opts.name)},` : "Hi,"}</p>
-<p>Your <strong>${poolLabel}</strong> deposit of <strong>${amount}</strong> has been submitted and is now <strong>pending review</strong>. We match the transaction on-chain and activate your cycle — this usually takes under an hour during trading sessions.</p>
-<p style="margin:16px 0;padding:12px 14px;background:#f4f5f7;border-radius:8px;font-family:ui-monospace,Menlo,monospace;font-size:13px">
-  <strong>Amount:</strong> ${amount} USDT<br/>
-  <strong>Pool:</strong> ${poolLabel} · ${opts.roi}x · target ${target}<br/>
-  <strong>TX:</strong> ${escape(opts.txHash)}<br/>
-  <strong>Reference:</strong> ${escape(opts.investmentId)}
-</p>
-<p>You'll get another email as soon as it's confirmed. Nothing else is needed from you.</p>
-${button(appUrl("/app/transactions"), "View status")}`),
-  })
-}
+export const buildCycleCompleted = (to: string, opts: { amount: number; pool: string; returnAmount: number; name?: string | null }): MailMessage => ({
+  to,
+  subject: `Cycle complete — ${money(opts.returnAmount)} is ready`,
+  html: layout(
+    "Your cycle is complete",
+    `${greeting(opts.name)}
+${p(`Your <strong>${poolLabel(opts.pool)}</strong> cycle has completed. Your return is available on your dashboard now.`)}
+${details([
+  ["Deposited", money(opts.amount)],
+  ["Return", `<span style="color:${BRAND.green}">${money(opts.returnAmount)}</span>`],
+  ["Profit", `<span style="color:${BRAND.green}">+${money(opts.returnAmount - opts.amount)}</span>`],
+])}
+${button(appUrl("/app/withdraw"), "Withdraw")}
+${note("Withdrawals are processed in USDT (TRC20). A 16.5% processing fee applies at withdrawal.")}`,
+    `${money(opts.returnAmount)} is ready on your dashboard.`
+  ),
+})
 
-export function cycleCompletedEmail(to: string, opts: { amount: number; pool: string; returnAmount: number; name?: string | null }) {
-  const poolLabel = opts.pool === "daily" ? "48H Pool" : "Weekly Pool"
-  return sendMail({
-    to,
-    subject: `Cycle complete — $${opts.returnAmount.toLocaleString()} ready`,
-    html: layout("Your cycle is complete", `<p>${opts.name ? `Hi ${escape(opts.name)},` : "Hi,"}</p>
-<p>Your <strong>${poolLabel}</strong> cycle on <strong>$${opts.amount.toLocaleString()}</strong> has completed. Your return of <strong>$${opts.returnAmount.toLocaleString()}</strong> is now available on your dashboard.</p>
-${button(appUrl("/app/withdraw"), "Withdraw")}`),
-  })
-}
-
-export function newDepositAdminEmail(opts: { userEmail: string; userName?: string | null; amount: number; pool: string; txHash: string; investmentId: string; network?: string }) {
+export const buildNewDepositAdmin = (opts: {
+  userEmail: string
+  userName?: string | null
+  amount: number
+  pool: string
+  txHash: string
+  investmentId: string
+  network?: string
+}): MailMessage | null => {
   const to = process.env.ADMIN_EMAIL
-  if (!to) return Promise.resolve({ sent: false, error: "ADMIN_EMAIL not set" })
-  return sendMail({
+  if (!to) return null
+  return {
     to,
-    subject: `New deposit request — $${opts.amount.toLocaleString()} from ${opts.userName || opts.userEmail}`,
-    html: layout("New deposit request", `<p><strong>${escape(opts.userName || opts.userEmail)}</strong> (${escape(opts.userEmail)}) submitted a ${opts.pool === "daily" ? "48H" : "Weekly"} Pool deposit.</p>
-<p style="margin:16px 0;padding:12px 14px;background:#f4f5f7;border-radius:8px;font-family:ui-monospace,Menlo,monospace;font-size:13px">
-  <strong>Amount:</strong> $${opts.amount.toLocaleString()}<br/>
-  <strong>Network:</strong> ${escape(opts.network || "TRC20")}<br/>
-  <strong>TX:</strong> ${escape(opts.txHash)}<br/>
-  <strong>ID:</strong> ${escape(opts.investmentId)}
-</p>
-${button(appUrl("/app/admin/deposits"), "Review in admin panel")}`),
-  })
+    subject: `New deposit — ${money(opts.amount)} from ${opts.userName || opts.userEmail}`,
+    html: layout(
+      "New deposit request",
+      `${p(`<strong>${escape(opts.userName || opts.userEmail)}</strong> (${escape(opts.userEmail)}) submitted a deposit that needs your review.`)}
+${details([
+  ["Amount", money(opts.amount)],
+  ["Plan", poolLabel(opts.pool)],
+  ["Network", escape(opts.network || "TRC20")],
+  ["Transaction", code(opts.txHash)],
+  ["Reference", code(opts.investmentId)],
+])}
+${button(appUrl("/app/admin/deposits"), "Review in admin panel")}`,
+      `${money(opts.amount)} ${poolLabel(opts.pool)} from ${opts.userName || opts.userEmail} — needs review.`
+    ),
+  }
 }
 
-// ---------------------------------------------------------------------------
-// Admin communications
-// ---------------------------------------------------------------------------
+/** Turns admin-written plain text into safe, paragraphed HTML (blank line = new paragraph). */
+function textToHtml(text: string): string {
+  return text
+    .trim()
+    .split(/\n{2,}/)
+    .map((para) => p(escape(para).replace(/\n/g, "<br/>")))
+    .join("\n")
+}
+
+export const buildCustom = (to: string, opts: { subject: string; body: string; name?: string | null; ctaLabel?: string; ctaUrl?: string }): MailMessage => ({
+  to,
+  subject: opts.subject,
+  html: layout(opts.subject, `${greeting(opts.name)}${textToHtml(opts.body)}${opts.ctaUrl && opts.ctaLabel ? button(opts.ctaUrl, opts.ctaLabel) : ""}`, opts.body.slice(0, 120)),
+})
+
+export const buildTest = (to: string): MailMessage => ({
+  to,
+  subject: "AlphaReserve test email",
+  html: layout(
+    "Email is working",
+    `${p("This is a test message from the AlphaReserve admin panel.")}
+${p("If you can read this, outbound email is configured correctly: investors will receive welcome emails, deposit updates, cycle completions and password resets.")}
+${details([
+  ["Sent from", escape(process.env.MAIL_FROM || "AlphaReserve <no-reply@localhost>")],
+  ["Links point to", escape(appUrl())],
+])}
+${button(appUrl("/app/admin/communications"), "Back to Communications")}`,
+    "Outbound email from AlphaReserve is working."
+  ),
+})
+
+// Send wrappers (keep the existing call sites unchanged).
+export const welcomeEmail = (to: string, name?: string | null) => sendMail(buildWelcome(to, name))
+export const passwordResetEmail = (to: string, token: string, name?: string | null) => sendMail(buildPasswordReset(to, token, name))
+export const passwordChangedEmail = (to: string, name?: string | null) => sendMail(buildPasswordChanged(to, name))
+export const accountCreatedByAdminEmail = (to: string, tempPassword: string, name?: string | null) => sendMail(buildAccountCreatedByAdmin(to, tempPassword, name))
+export const passwordResetByAdminEmail = (to: string, tempPassword: string, name?: string | null) => sendMail(buildPasswordResetByAdmin(to, tempPassword, name))
+export const depositReceivedEmail = (to: string, opts: Parameters<typeof buildDepositReceived>[1]) => sendMail(buildDepositReceived(to, opts))
+export const investmentDecisionEmail = (to: string, opts: Parameters<typeof buildInvestmentDecision>[1]) => sendMail(buildInvestmentDecision(to, opts))
+export const cycleCompletedEmail = (to: string, opts: Parameters<typeof buildCycleCompleted>[1]) => sendMail(buildCycleCompleted(to, opts))
+export function newDepositAdminEmail(opts: Parameters<typeof buildNewDepositAdmin>[0]) {
+  const msg = buildNewDepositAdmin(opts)
+  return msg ? sendMail(msg) : Promise.resolve({ sent: false, error: "ADMIN_EMAIL not set" })
+}
+export const customEmail = (to: string, opts: Parameters<typeof buildCustom>[1]) => sendMail(buildCustom(to, opts))
+export const testEmail = (to: string) => sendMail(buildTest(to))
+
+/** Every template with sample data — used by the preview script and admin preview. */
+export function sampleTemplates(): { key: string; label: string; message: MailMessage }[] {
+  const to = "investor@example.com"
+  const name = "Jane Doe"
+  return [
+    { key: "welcome", label: "Welcome", message: buildWelcome(to, name) },
+    { key: "deposit-received", label: "Deposit received", message: buildDepositReceived(to, { amount: 2000, pool: "weekly", txHash: "7f3a9c…e41b", investmentId: "inv_8k2m4q", roi: 10, network: "USDT (TRC20)", name }) },
+    { key: "deposit-confirmed", label: "Deposit confirmed", message: buildInvestmentDecision(to, { approved: true, amount: 2000, pool: "weekly", targetValue: 20000, name }) },
+    { key: "deposit-rejected", label: "Deposit not confirmed", message: buildInvestmentDecision(to, { approved: false, amount: 500, pool: "daily", name }) },
+    { key: "cycle-completed", label: "Cycle completed", message: buildCycleCompleted(to, { amount: 2000, pool: "weekly", returnAmount: 20000, name }) },
+    { key: "password-reset", label: "Password reset link", message: buildPasswordReset(to, "sample-token", name) },
+    { key: "password-changed", label: "Password changed", message: buildPasswordChanged(to, name) },
+    { key: "account-created", label: "Account created by admin", message: buildAccountCreatedByAdmin(to, "Kdf2hThNH7ZZ", name) },
+    { key: "password-reset-admin", label: "Password reset by admin", message: buildPasswordResetByAdmin(to, "WneziccFum4e", name) },
+    { key: "admin-new-deposit", label: "New deposit (admin notice)", message: buildNewDepositAdmin({ userEmail: to, userName: name, amount: 2000, pool: "weekly", txHash: "7f3a9c…e41b", investmentId: "inv_8k2m4q", network: "TRC20" }) ?? buildTest(to) },
+    { key: "custom", label: "Admin message", message: buildCustom(to, { subject: "Weekly pool closes Friday", body: "The weekly pool closes this Friday at 18:00 UTC.\n\nDeposits confirmed before then are included in this cycle. Anything after rolls into next week's.", name, ctaLabel: "Open dashboard", ctaUrl: appUrl("/app") }) },
+    { key: "test", label: "Test email", message: buildTest(to) },
+  ]
+}
 
 export function mailStatus() {
   return {
@@ -274,30 +474,3 @@ export async function verifyMailTransport(): Promise<{ ok: boolean; error?: stri
 }
 
 /** Turns admin-written plain text into safe, paragraphed HTML (blank line = new paragraph). */
-function textToHtml(text: string): string {
-  return text
-    .trim()
-    .split(/\n{2,}/)
-    .map((para) => `<p>${escape(para).replace(/\n/g, "<br/>")}</p>`)
-    .join("\n")
-}
-
-export function customEmail(to: string, opts: { subject: string; body: string; name?: string | null; ctaLabel?: string; ctaUrl?: string }) {
-  const greeting = opts.name ? `<p>Hi ${escape(opts.name)},</p>` : ""
-  const cta = opts.ctaUrl && opts.ctaLabel ? button(opts.ctaUrl, opts.ctaLabel) : ""
-  return sendMail({
-    to,
-    subject: opts.subject,
-    html: layout(opts.subject, `${greeting}${textToHtml(opts.body)}${cta}`),
-  })
-}
-
-export function testEmail(to: string) {
-  return sendMail({
-    to,
-    subject: `${APP_NAME} test email`,
-    html: layout("Email is working", `<p>This is a test message from the ${APP_NAME} admin panel.</p>
-<p>If you can read this, outbound email is configured correctly and users will receive password resets, welcome emails and deposit updates.</p>
-${button(appUrl("/app/admin/communications"), "Back to Communications")}`),
-  })
-}

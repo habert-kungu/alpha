@@ -204,21 +204,28 @@ export default function CommunicationsPage() {
 
       {/* Automatic emails */}
       <Card className="p-4 sm:p-5">
-        <h3 className="mb-3 text-sm font-medium text-foreground">Automatic emails</h3>
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-sm font-medium text-foreground">Automatic emails</h3>
+          <span className="text-[11px] text-muted-foreground">Click “Preview” to open the template with sample data</span>
+        </div>
         <ul className="grid grid-cols-1 gap-2 text-xs text-muted-foreground sm:grid-cols-2">
           {[
-            ["Welcome", "when someone signs up"],
-            ["Password reset link", "from “Forgot password” (1-hour, single-use)"],
-            ["Password changed", "after a reset or a change from the profile"],
-            ["Deposit received", "to the user as soon as they submit a deposit (pending review)"],
-            ["Deposit confirmed / not confirmed", "when you approve or reject a deposit"],
-            ["Account details", "when you add a user here (temporary password)"],
-            ["Password reset by admin", "temporary password when you reset someone from Users"],
-            ["New deposit request", `to ${data.adminEmail || "ADMIN_EMAIL"} for every submission`],
-          ].map(([t, d]) => (
-            <li key={t} className="flex gap-2 rounded-lg bg-secondary/40 px-3 py-2">
+            ["welcome", "Welcome", "when someone signs up"],
+            ["deposit-received", "Deposit received", "to the user as soon as they submit a deposit (pending review)"],
+            ["deposit-confirmed", "Deposit confirmed", "when you approve a deposit"],
+            ["deposit-rejected", "Deposit not confirmed", "when you reject a deposit"],
+            ["cycle-completed", "Cycle completed", "when you mark a cycle completed (payout)"],
+            ["password-reset", "Password reset link", "from “Forgot password” (1-hour, single-use)"],
+            ["password-changed", "Password changed", "after a reset or a change from the profile"],
+            ["account-created", "Account details", "when you add a user (temporary password)"],
+            ["password-reset-admin", "Password reset by admin", "when you reset someone from Users"],
+            ["admin-new-deposit", "New deposit request", `to ${data.adminEmail || "ADMIN_EMAIL"} for every submission`],
+            ["custom", "Your messages", "what the compose form below sends"],
+          ].map(([key, t, d]) => (
+            <li key={key} className="flex items-start gap-2 rounded-lg bg-secondary/40 px-3 py-2">
               <span className="text-[var(--color-success)]">✓</span>
-              <span><span className="font-medium text-foreground">{t}</span> — {d}</span>
+              <span className="min-w-0 flex-1"><span className="font-medium text-foreground">{t}</span> — {d}</span>
+              <a href={`/api/admin/mail/preview?key=${key}`} target="_blank" rel="noreferrer" className="shrink-0 font-medium text-foreground hover:underline">Preview</a>
             </li>
           ))}
         </ul>
