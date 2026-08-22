@@ -97,7 +97,7 @@ export default function InvestmentsPage() {
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4">
         <button
           onClick={() => setSelectedPlan("daily")}
-          className={`rounded-lg border bg-card p-3 text-left transition-all hover:bg-secondary/50 sm:p-4 ${selectedPlan === "daily" ? "border-[oklch(0.21_0_0)] ring-2 ring-[oklch(0.21_0_0)]" : "border-border"}`}
+          className={`rounded-lg border bg-card p-3 text-left transition-all hover:bg-secondary/50 sm:p-4 ${selectedPlan === "daily" ? "border-primary ring-2 ring-primary/40 bg-primary/5" : "border-border"}`}
         >
           <div className="mb-2 flex items-start justify-between">
             <div>
@@ -116,7 +116,7 @@ export default function InvestmentsPage() {
 
         <button
           onClick={() => setSelectedPlan("weekly")}
-          className={`relative rounded-lg border bg-card p-3 text-left transition-all hover:bg-secondary/50 sm:p-4 ${selectedPlan === "weekly" ? "border-[oklch(0.21_0_0)] ring-2 ring-[oklch(0.21_0_0)]" : "border-border"}`}
+          className={`relative rounded-lg border bg-card p-3 text-left transition-all hover:bg-secondary/50 sm:p-4 ${selectedPlan === "weekly" ? "border-primary ring-2 ring-primary/40 bg-primary/5" : "border-border"}`}
         >
           <div className="absolute -top-1.5 right-2 rounded bg-[oklch(0.21_0_0)] px-1.5 py-0.5 text-[9px] font-medium text-[oklch(1_0_180)] sm:right-3 sm:px-2 sm:text-[10px]">
             Popular
@@ -159,7 +159,7 @@ export default function InvestmentsPage() {
                     setCopiedAddress(false)
                   }}
                   className={`rounded-lg border px-3 py-2.5 text-left transition-all ${
-                    network === n.key ? "border-[oklch(0.21_0_0)] bg-card ring-2 ring-[oklch(0.21_0_0)]" : "border-border bg-card hover:bg-secondary/50"
+                    network === n.key ? "border-primary bg-primary/5 ring-2 ring-primary/40" : "border-border bg-card hover:bg-secondary/50"
                   }`}
                 >
                   <div className="text-xs font-medium text-foreground sm:text-sm">{n.label}</div>
