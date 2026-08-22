@@ -43,6 +43,7 @@ async function main() {
     ["test", await mail.testEmail(recipient)],
     ["welcome", await mail.welcomeEmail(recipient, "Test User")],
     ["password-reset", await mail.passwordResetEmail(recipient, "example-token", "Test User")],
+    ["deposit-received", await mail.depositReceivedEmail(recipient, { amount: 500, pool: "weekly", txHash: "0xabc123…", investmentId: "example-id", roi: 8, name: "Test User" })],
     ["deposit-approved", await mail.investmentDecisionEmail(recipient, { approved: true, amount: 500, pool: "weekly", targetValue: 4000, name: "Test User" })],
   ] as const
 

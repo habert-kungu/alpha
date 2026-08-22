@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionUser } from '@/lib/auth'
-import { newDepositAdminEmail } from '@/lib/mail'
+import { newDepositAdminEmail, depositReceivedEmail } from '@/lib/mail'
 import { triggerNotification, CHANNELS, EVENTS } from '@/lib/pusher'
 import prisma from '@/lib/db'
 
@@ -84,6 +84,14 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    void depositReceivedEmail(session.email, {
+      amount: parsedAmount,
+      pool,
+      txHash: txHash.trim(),
+      investmentId: investment.id,
+      roi,
+      name: session.name,
+    })
     void newDepositAdminEmail({
       userEmail: session.email,
       userName: session.name,

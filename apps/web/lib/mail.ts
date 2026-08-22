@@ -180,6 +180,29 @@ ${button(appUrl("/app/support"), "Contact support")}`
   })
 }
 
+export function depositReceivedEmail(
+  to: string,
+  opts: { amount: number; pool: string; txHash: string; investmentId: string; roi: number; name?: string | null }
+) {
+  const poolLabel = opts.pool === "daily" ? "24H Pool" : "Weekly Pool"
+  const amount = `$${opts.amount.toLocaleString()}`
+  const target = `$${Math.round(opts.amount * opts.roi).toLocaleString()}`
+  return sendMail({
+    to,
+    subject: `Deposit received — ${amount} ${poolLabel} (pending review)`,
+    html: layout("We've received your deposit request", `<p>${opts.name ? `Hi ${escape(opts.name)},` : "Hi,"}</p>
+<p>Your <strong>${poolLabel}</strong> deposit of <strong>${amount}</strong> has been submitted and is now <strong>pending review</strong>. We match the transaction on-chain and activate your cycle — this usually takes under an hour during trading sessions.</p>
+<p style="margin:16px 0;padding:12px 14px;background:#f4f5f7;border-radius:8px;font-family:ui-monospace,Menlo,monospace;font-size:13px">
+  <strong>Amount:</strong> ${amount} USDT<br/>
+  <strong>Pool:</strong> ${poolLabel} · ${opts.roi}x · target ${target}<br/>
+  <strong>TX:</strong> ${escape(opts.txHash)}<br/>
+  <strong>Reference:</strong> ${escape(opts.investmentId)}
+</p>
+<p>You'll get another email as soon as it's confirmed. Nothing else is needed from you.</p>
+${button(appUrl("/app/transactions"), "View status")}`),
+  })
+}
+
 export function newDepositAdminEmail(opts: { userEmail: string; userName?: string | null; amount: number; pool: string; txHash: string; investmentId: string }) {
   const to = process.env.ADMIN_EMAIL
   if (!to) return Promise.resolve({ sent: false, error: "ADMIN_EMAIL not set" })

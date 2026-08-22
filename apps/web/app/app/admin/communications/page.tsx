@@ -128,6 +128,7 @@ export default function CommunicationsPage() {
             ["Welcome", "when someone signs up"],
             ["Password reset link", "from “Forgot password” (1-hour, single-use)"],
             ["Password changed", "after a reset or a change from the profile"],
+            ["Deposit received", "to the user as soon as they submit a deposit (pending review)"],
             ["Deposit confirmed / not confirmed", "when you approve or reject a deposit"],
             ["Account details", "when you add a user here (temporary password)"],
             ["New deposit request", `to ${data.adminEmail || "ADMIN_EMAIL"} for every submission`],
