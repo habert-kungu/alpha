@@ -4,6 +4,9 @@ import { Card } from "@/components/ui"
 import * as React from "react"
 import Link from "next/link"
 import { useTheme } from "next-themes"
+import { KlineChart } from "@/components/KlineChart"
+import { ForexChart, ForexOverview, FOREX_PAIRS, type ForexPair } from "@/components/ForexChart"
+import { useCachedFetch } from "@/lib/use-cached-fetch"
 
 // Symbols we track, with display names, in rank order.
 const TRACKED = [
@@ -33,47 +36,33 @@ function formatPrice(p: number) {
   })
 }
 
-/** Live 24h ticker data from Binance, refreshed every 30s, with fallback. */
+/**
+ * Live 24h ticker data from Binance. Cached (memory + session) so returning to
+ * this page paints the last known prices immediately, then refreshes every 30s.
+ */
 function useLivePrices() {
-  const [coins, setCoins] = React.useState<LiveCoin[]>(FALLBACK)
-  const [loading, setLoading] = React.useState(true)
+  const symbolsParam = encodeURIComponent(JSON.stringify(TRACKED.map((t) => t.sym)))
+  const { data, loading, error, refresh } = useCachedFetch<{ symbol: string; lastPrice: string; priceChangePercent: string }[]>("binance:24h", {
+    url: `https://api.binance.com/api/v3/ticker/24hr?symbols=${symbolsParam}`,
+    ttl: 30_000,
+  })
 
   React.useEffect(() => {
-    let active = true
-    const symbolsParam = encodeURIComponent(JSON.stringify(TRACKED.map((t) => t.sym)))
+    const id = setInterval(() => void refresh(), 30_000)
+    return () => clearInterval(id)
+  }, [refresh])
 
-    const fetchPrices = async () => {
-      try {
-        const res = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbols=${symbolsParam}`)
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const data: { symbol: string; lastPrice: string; priceChangePercent: string }[] = await res.json()
-        const bySymbol = new Map(data.map((d) => [d.symbol, d]))
-        const next = TRACKED.map((t) => {
-          const d = bySymbol.get(t.sym)
-          return {
-            base: t.base,
-            name: t.name,
-            price: d ? parseFloat(d.lastPrice) : 0,
-            change: d ? parseFloat(d.priceChangePercent) : 0,
-          }
-        }).filter((c) => c.price > 0)
-        if (active && next.length) setCoins(next)
-      } catch {
-        if (active) setCoins(FALLBACK)
-      } finally {
-        if (active) setLoading(false)
-      }
-    }
+  const coins = React.useMemo<LiveCoin[]>(() => {
+    if (!data) return FALLBACK
+    const bySymbol = new Map(data.map((d) => [d.symbol, d]))
+    const next = TRACKED.map((t) => {
+      const d = bySymbol.get(t.sym)
+      return { base: t.base, name: t.name, price: d ? parseFloat(d.lastPrice) : 0, change: d ? parseFloat(d.priceChangePercent) : 0 }
+    }).filter((c) => c.price > 0)
+    return next.length ? next : FALLBACK
+  }, [data])
 
-    fetchPrices()
-    const interval = setInterval(fetchPrices, 30000)
-    return () => {
-      active = false
-      clearInterval(interval)
-    }
-  }, [])
-
-  return { coins, loading }
+  return { coins, loading: loading && !error }
 }
 
 function LiveBadge() {
@@ -119,51 +108,6 @@ function LoadingOverlay({ label = "Loading…" }: { label?: string }) {
   )
 }
 
-function TradingViewChart({ symbol, height = 240 }: { symbol: string; height?: number }) {
-  const [timeframe, setTimeframe] = React.useState("1H")
-  const [isLoading, setIsLoading] = React.useState(true)
-  const { resolvedTheme } = useTheme()
-  const tvTheme = resolvedTheme === "dark" ? "dark" : "light"
-
-  const timeframes = ["1H", "4H", "1D", "1W"]
-  const intervalMap: Record<string, string> = { "1H": "15", "4H": "60", "1D": "D", "1W": "W" }
-
-  React.useEffect(() => {
-    setIsLoading(true)
-    const timer = setTimeout(() => setIsLoading(false), 1500)
-    return () => clearTimeout(timer)
-  }, [symbol, tvTheme])
-
-  return (
-    <div className="relative">
-      <div className="absolute left-2 top-2 z-10 flex gap-1">
-        {timeframes.map((tf) => (
-          <button
-            key={tf}
-            onClick={() => setTimeframe(tf)}
-            className={`rounded px-2 py-1 text-[9px] font-medium transition-all sm:text-[10px] ${
-              timeframe === tf ? "bg-foreground text-background" : "bg-card/80 text-muted-foreground hover:bg-card"
-            }`}
-          >
-            {tf}
-          </button>
-        ))}
-      </div>
-
-      {isLoading && <LoadingOverlay label="Loading chart…" />}
-
-      <iframe
-        key={`${symbol}-${tvTheme}`}
-        src={`https://www.tradingview.com/widgetembed/?symbol=${symbol}&interval=${intervalMap[timeframe]}&theme=${tvTheme}&style=1&locale=en&enable_publishing=false&allow_symbol_change=false&hide_side_toolbar=true&studies=MASimple@tv-basicstudies&save_image=false&container_id=chart_${symbol}`}
-        className="w-full"
-        style={{ height }}
-        allow="clipboard-write"
-        title="Chart"
-        onLoad={() => setIsLoading(false)}
-      />
-    </div>
-  )
-}
 
 function CryptoScreener({ coins, loading }: { coins: LiveCoin[]; loading: boolean }) {
   return (
@@ -226,24 +170,6 @@ function TradingViewScriptWidget({
   return <div ref={ref} className="tradingview-widget-container" style={{ height, overflow: "hidden" }} />
 }
 
-function ForexHeatMap() {
-  const { resolvedTheme } = useTheme()
-  const colorTheme = resolvedTheme === "dark" ? "dark" : "light"
-  return (
-    <TradingViewScriptWidget
-      scriptName="embed-widget-forex-heat-map.js"
-      height={200}
-      config={{
-        width: "100%",
-        height: 200,
-        currencies: ["EUR", "USD", "JPY", "GBP", "CHF", "AUD", "CAD"],
-        isTransparent: false,
-        colorTheme,
-        locale: "en",
-      }}
-    />
-  )
-}
 
 function TradingViewNews() {
   const { resolvedTheme } = useTheme()
@@ -268,7 +194,7 @@ function TradingViewNews() {
 
 export default function ExplorePage() {
   const [activeTab, setActiveTab] = React.useState("crypto")
-  const [selectedForex, setSelectedForex] = React.useState("FX:EURUSD")
+  const [selectedForex, setSelectedForex] = React.useState<ForexPair>(FOREX_PAIRS[0])
   const [selectedCrypto, setSelectedCrypto] = React.useState("BINANCE:BTCUSDT")
   const { coins, loading } = useLivePrices()
 
@@ -287,16 +213,7 @@ export default function ExplorePage() {
     { symbol: "BINANCE:DOGEUSDT", label: "DOGE" },
   ]
 
-  const forexPairs = [
-    { symbol: "FX:EURUSD", label: "EUR/USD" },
-    { symbol: "FX:GBPUSD", label: "GBP/USD" },
-    { symbol: "FX:USDJPY", label: "USD/JPY" },
-    { symbol: "FX:USDCHF", label: "USD/CHF" },
-    { symbol: "FX:AUDUSD", label: "AUD/USD" },
-  ]
-
   const currentCryptoLabel = cryptoPairs.find((p) => p.symbol === selectedCrypto)?.label || "BTC"
-  const currentForexLabel = forexPairs.find((p) => p.symbol === selectedForex)?.label || "EUR/USD"
 
   const selectorBtn = (active: boolean) =>
     `rounded px-2.5 py-1.5 text-[10px] font-semibold transition-all ${
@@ -345,8 +262,11 @@ export default function ExplorePage() {
             </div>
           </Card>
 
-          <ChartContainer title={`${currentCryptoLabel}/USDT`}>
-            <TradingViewChart symbol={selectedCrypto} height={240} />
+          <ChartContainer
+            title={`${currentCryptoLabel}/USDT`}
+            action={<span className="text-[9px] text-muted-foreground">Binance · live</span>}
+          >
+            <KlineChart symbol={selectedCrypto.replace("BINANCE:", "")} height={260} />
           </ChartContainer>
 
           <ChartContainer title="Market Overview">
@@ -400,20 +320,20 @@ export default function ExplorePage() {
         <div className="space-y-3 sm:space-y-4">
           <Card className="p-2.5">
             <div className="flex flex-wrap gap-1">
-              {forexPairs.map((pair) => (
-                <button key={pair.symbol} onClick={() => setSelectedForex(pair.symbol)} className={selectorBtn(selectedForex === pair.symbol)}>
-                  {pair.label}
+              {FOREX_PAIRS.map((pair) => (
+                <button key={pair.pair} onClick={() => setSelectedForex(pair)} className={selectorBtn(selectedForex.pair === pair.pair)}>
+                  {pair.pair}
                 </button>
               ))}
             </div>
           </Card>
 
-          <ChartContainer title={currentForexLabel}>
-            <TradingViewChart symbol={selectedForex} height={240} />
+          <ChartContainer title={selectedForex.pair} action={<span className="text-[9px] text-muted-foreground">ECB daily fix</span>}>
+            <ForexChart pair={selectedForex} height={260} />
           </ChartContainer>
 
-          <ChartContainer title="Market Overview">
-            <ForexHeatMap />
+          <ChartContainer title="Majors Overview">
+            <ForexOverview selected={selectedForex.pair} onSelect={setSelectedForex} />
           </ChartContainer>
         </div>
       )}

@@ -9,14 +9,16 @@ export function ThemeToggle() {
 
   React.useEffect(() => setMounted(true), [])
 
-  const isDark = resolvedTheme === "dark"
+  // Until mounted the server and client can't agree on the theme, so render
+  // neutral attributes to avoid a hydration mismatch.
+  const isDark = mounted && resolvedTheme === "dark"
 
   return (
     <button
       type="button"
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
-      title={`${isDark ? "Light" : "Dark"} theme (D)`}
+      aria-label={!mounted ? "Toggle theme" : isDark ? "Switch to light theme" : "Switch to dark theme"}
+      title={!mounted ? "Toggle theme (D)" : `${isDark ? "Light" : "Dark"} theme (D)`}
       className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
     >
       {!mounted ? (

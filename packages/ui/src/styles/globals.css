@@ -252,17 +252,23 @@
   .tag-default {
     @apply bg-secondary text-foreground;
   }
+  /* Semantic tones — these tokens are redefined for dark mode, so the tags
+     stay legible in both themes. */
   .tag-blue {
-    @apply bg-[oklch(0.96_0.01_240/0.5)] text-[oklch(0.6_0_240)];
+    background-color: var(--bg-info);
+    color: var(--color-info);
   }
   .tag-green {
-    @apply bg-[oklch(0.96_0.01_150/0.5)] text-[oklch(0.55_0_150)];
+    background-color: var(--bg-success);
+    color: var(--color-success);
   }
   .tag-amber {
-    @apply bg-[oklch(0.96_0.01_50/0.5)] text-[oklch(0.7_0_50)];
+    background-color: var(--bg-warning);
+    color: var(--color-warning);
   }
   .tag-red {
-    @apply bg-[oklch(0.96_0.01_0/0.5)] text-[oklch(0.6_0_0)];
+    background-color: var(--bg-danger);
+    color: var(--destructive);
   }
 }
 

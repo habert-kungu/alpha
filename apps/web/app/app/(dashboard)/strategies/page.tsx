@@ -11,7 +11,7 @@ const strategies = [
     riskReward: "3.2:1",
     pairs: "6+",
     status: "Primary",
-    statusColor: "blue",
+    statusColor: "green",
     markets: ["ETH/USDT", "BTC/USDT", "SOL/USDT", "BNB/USDT"],
     timeframe: "4H entry, Daily trend filter",
     indicators: "EMA 50/200, ADX, RSI",
@@ -25,7 +25,7 @@ const strategies = [
     riskReward: "2.5:1",
     pairs: "8-15",
     status: "Active",
-    statusColor: "amber",
+    statusColor: "blue",
     markets: ["ETH/USDT", "EUR/GBP", "XRP/USDT"],
     timeframe: "London Open, NY Open",
     indicators: "VWAP, Order Flow, Bollinger Bands",
@@ -39,13 +39,20 @@ const strategies = [
     riskReward: "4.1:1",
     pairs: "8+",
     status: "Active",
-    statusColor: "green",
+    statusColor: "amber",
     markets: ["BNB/USDT", "GBP/JPY", "DOGE/USDT"],
     timeframe: "15m confirmation, 1H structure",
     indicators: "Volume, S/R Zones, ATR",
     confidence: 79,
   },
 ]
+
+/** Accent per strategy, driven by the semantic tokens so it works in both themes. */
+const TONE: Record<string, { fg: string; bg: string; tag: string }> = {
+  green: { fg: "var(--color-success)", bg: "var(--bg-success)", tag: "tag-green" },
+  blue: { fg: "var(--color-info)", bg: "var(--bg-info)", tag: "tag-blue" },
+  amber: { fg: "var(--color-warning)", bg: "var(--bg-warning)", tag: "tag-amber" },
+}
 
 export default function StrategiesPage() {
   return (
@@ -57,36 +64,31 @@ export default function StrategiesPage() {
 
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-1.5 px-2 py-1 rounded tag tag-green">
-          <span className="w-1.5 h-1.5 bg-[oklch(0.645_0.179_45.761)] rounded-full animate-pulse" />
+          <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: "var(--color-success)" }} />
           <span className="text-[11px] font-medium">3 Active Crypto Strategies</span>
         </div>
         <p className="text-sm text-muted-foreground">All strategies run simultaneously on pool capital. Returns are compounded across cycles.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {strategies.map((strat, i) => (
+        {strategies.map((strat, i) => {
+          const tone = TONE[strat.statusColor] ?? TONE.green!
+          return (
           <div key={i} className="bg-card border border-border rounded-lg overflow-hidden hover:bg-secondary/30 transition-colors">
             <div className="p-4 pb-0">
               <div className="flex items-start justify-between mb-3">
-                <div className="w-8 h-8 rounded flex items-center justify-center" style={{ 
-                  background: strat.statusColor === 'blue' ? 'oklch(0.7_0.15_145/0.12)' : 
-                             strat.statusColor === 'amber' ? 'oklch(0.9 0 0/0.1)' : 
-                             'oklch(0.65_0.15_46/0.12)' 
-                }}>
+                <div className="w-8 h-8 rounded flex items-center justify-center" style={{ background: tone.bg }}>
                   <svg className="w-4 h-4" style={{ 
-                    color: strat.statusColor === 'blue' ? 'oklch(0.7_0.196_145.252)' : 
-                           strat.statusColor === 'amber' ? 'oklch(0.5 0 0)' : 
-                           'oklch(0.645_0.179_45.761)'
+                    color: tone.fg
                   }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
                     <polyline points="17 6 23 6 23 12"/>
                   </svg>
                 </div>
-                <span className={`tag ${
-                  strat.statusColor === 'blue' ? 'tag-blue' : 
-                  strat.statusColor === 'amber' ? 'tag-amber' : 
-                  'tag-green'
-                }`}>{strat.status}</span>
+                <span className={`tag ${tone.tag}`}>
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: tone.fg }} />
+                  {strat.status}
+                </span>
               </div>
 
               <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Strategy {strat.id}</div>
@@ -95,11 +97,11 @@ export default function StrategiesPage() {
 
               <div className="grid grid-cols-3 gap-2 mb-3">
                 <div className="text-center p-2 bg-secondary rounded">
-                  <div className="text-[13px] font-medium" style={{ color: strat.statusColor === 'blue' ? 'oklch(0.7_0.196_145.252)' : strat.statusColor === 'amber' ? 'oklch(0.5 0 0)' : 'oklch(0.645_0.179_45.761)' }}>{strat.winRate}</div>
+                  <div className="text-[13px] font-medium" style={{ color: tone.fg }}>{strat.winRate}</div>
                   <div className="text-[10px] text-muted-foreground">Win Rate</div>
                 </div>
                 <div className="text-center p-2 bg-secondary rounded">
-                  <div className="text-[13px] font-medium text-[oklch(0.645_0.179_45.761)]">{strat.riskReward}</div>
+                  <div className="text-[13px] font-medium" style={{ color: "var(--color-success)" }}>{strat.riskReward}</div>
                   <div className="text-[10px] text-muted-foreground">Avg R:R</div>
                 </div>
                 <div className="text-center p-2 bg-secondary rounded">
@@ -111,16 +113,10 @@ export default function StrategiesPage() {
               <div className="mb-3">
                 <div className="flex justify-between text-[11px] mb-1.5">
                   <span className="text-muted-foreground">Confidence</span>
-                  <span className="font-medium" style={{ 
-                    color: strat.statusColor === 'blue' ? 'oklch(0.7_0.196_145.252)' : 
-                           strat.statusColor === 'amber' ? 'oklch(0.5 0 0)' : 'oklch(0.645_0.179_45.761)'
-                  }}>{strat.confidence >= 80 ? 'High' : 'Very High'}</span>
+                  <span className="font-medium" style={{ color: tone.fg }}>{strat.confidence >= 80 ? 'Very High' : 'High'}</span>
                 </div>
                 <div className="h-1 bg-secondary rounded-full overflow-hidden">
-                  <div className="h-full rounded-full" style={{ 
-                    width: `${strat.confidence}%`,
-                    background: `linear-gradient(90deg, ${strat.statusColor === 'blue' ? 'oklch(0.7_0.196_145.252)' : strat.statusColor === 'amber' ? 'oklch(0.5 0 0)' : 'oklch(0.645_0.179_45.761)'}, ${strat.statusColor === 'blue' ? 'oklch(0.75_0.15_145)' : strat.statusColor === 'amber' ? 'oklch(0.7 0 0)' : 'oklch(0.7_0.15_46)'})`
-                  }} />
+                  <div className="h-full rounded-full" style={{ width: `${strat.confidence}%`, background: tone.fg }} />
                 </div>
               </div>
 
@@ -132,37 +128,38 @@ export default function StrategiesPage() {
             </div>
             
             <div className="px-4 py-2 bg-secondary border-t border-border">
-              <span className="text-[11px] text-[oklch(0.645_0.179_45.761)] font-medium">✓ {strat.winRate} of trades</span>
+              <span className="text-[11px] font-medium" style={{ color: "var(--color-success)" }}>✓ {strat.winRate} of trades</span>
               <span className="text-[11px] text-muted-foreground"> close in profit</span>
             </div>
           </div>
-        ))}
+          )
+        })}
       </div>
 
       <div className="bg-card border border-border rounded-lg overflow-hidden">
         <div className="px-4 py-3 border-b border-border">
           <h2 className="text-[13px] font-medium text-foreground">Combined Pool Performance</h2>
         </div>
-        <div className="grid grid-cols-5 divide-x divide-border">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-y sm:divide-y-0 divide-border">
           <div className="py-4 text-center">
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Avg Win Rate</div>
-            <div className="text-lg font-medium text-[oklch(0.645_0.179_45.761)]">79%</div>
+            <div className="text-lg font-medium text-[var(--color-success)]">79%</div>
           </div>
           <div className="py-4 text-center">
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Avg Reward:Risk</div>
-            <div className="text-lg font-medium text-[oklch(0.806_0.165_72.807)]">3.3:1</div>
+            <div className="text-lg font-medium text-[var(--color-warning)]">3.3:1</div>
           </div>
           <div className="py-4 text-center">
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Total Pairs</div>
-            <div className="text-lg font-medium text-[oklch(0.7_0.196_145.252)]">20+</div>
+            <div className="text-lg font-medium text-[var(--color-info)]">20+</div>
           </div>
           <div className="py-4 text-center">
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Daily Trades</div>
-            <div className="text-lg font-medium text-[oklch(0.694 0.171 123.315)]">10-20</div>
+            <div className="text-lg font-medium text-foreground">10-20</div>
           </div>
           <div className="py-4 text-center">
             <div className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Profitable Cycles</div>
-            <div className="text-lg font-medium text-[oklch(0.645_0.179_45.761)]">100%</div>
+            <div className="text-lg font-medium text-[var(--color-success)]">100%</div>
           </div>
         </div>
       </div>
