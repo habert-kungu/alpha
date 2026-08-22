@@ -90,12 +90,12 @@ export default function UsersPage() {
       setForm({ name: "", email: "", telegram: "", password: "", role: "user" })
       setNotice(
         json.emailSent ? (
-          <>Account created. Sign-in details were emailed to <strong>{json.user.email}</strong>.</>
+          <>Account created. An activation link was emailed to <strong>{json.user.email}</strong>.</>
         ) : (
           <>
             Account created for <strong>{json.user.email}</strong>.
-            {json.tempPassword && (
-              <> Email isn't configured, so share this temporary password manually: <code className="rounded bg-secondary px-1.5 py-0.5 font-mono text-[12px]">{json.tempPassword}</code></>
+            {json.link && (
+              <> Email isn't configured, so send them this activation link (valid 72h): <code className="break-all rounded bg-secondary px-1.5 py-0.5 font-mono text-[11px]">{json.link}</code></>
             )}
           </>
         )
@@ -142,9 +142,9 @@ export default function UsersPage() {
       }
       setNotice(
         json.emailSent ? (
-          <>Password reset for <strong>{json.email}</strong>. They've been signed out everywhere and emailed a temporary password.</>
+          <>Password reset for <strong>{json.email}</strong>. They've been signed out everywhere and emailed a link to choose a new password.</>
         ) : (
-          <>Password reset for <strong>{json.email}</strong> and all their sessions ended. Email isn't configured, so share this temporary password manually: <code className="rounded bg-secondary px-1.5 py-0.5 font-mono text-[12px]">{json.tempPassword}</code></>
+          <>Password reset for <strong>{json.email}</strong> and all their sessions ended. Email isn't configured, so send them this link (valid 24h): <code className="break-all rounded bg-secondary px-1.5 py-0.5 font-mono text-[11px]">{json.link}</code></>
         )
       )
       setResetting(null)
@@ -325,8 +325,8 @@ export default function UsersPage() {
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-foreground">Password <span className="font-normal text-muted-foreground">(optional — a temporary one is generated and emailed)</span></label>
-            <input className={inputCls} type="text" minLength={6} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Leave blank to auto-generate" autoComplete="off" />
+            <label className="mb-1 block text-xs font-medium text-foreground">Password <span className="font-normal text-muted-foreground">(optional — leave blank to email them an activation link)</span></label>
+            <input className={inputCls} type="text" minLength={6} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Leave blank to send an activation link" autoComplete="off" />
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={() => setShowAdd(false)} disabled={busy} className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground">Cancel</button>
@@ -340,7 +340,7 @@ export default function UsersPage() {
         {resetting && (
           <div className="space-y-4">
             {error && <div className="rounded-lg border border-destructive/25 bg-[var(--bg-danger)] p-2.5 text-xs text-destructive">{error}</div>}
-            <p className="text-sm text-foreground">Generate a temporary password for <strong>{resetting.name || resetting.email}</strong>? They'll be signed out on every device and emailed the new password.</p>
+            <p className="text-sm text-foreground">Generate a temporary password for <strong>{resetting.name || resetting.email}</strong>? They'll be signed out on every device and emailed a link to choose a new password.</p>
             <div className="flex justify-end gap-2">
               <button onClick={() => setResetting(null)} disabled={busy} className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground">Cancel</button>
               <button onClick={handleResetPassword} disabled={busy} className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{busy ? "Resetting…" : "Reset & email"}</button>

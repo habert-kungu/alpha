@@ -234,37 +234,38 @@ ${button(appUrl("/forgot-password"), "Secure my account")}`,
   ),
 })
 
-export const buildAccountCreatedByAdmin = (to: string, tempPassword: string, name?: string | null): MailMessage => ({
+export const buildAccountCreatedByAdmin = (to: string, link: string, name?: string | null): MailMessage => ({
   to,
-  subject: "Your AlphaReserve account",
+  subject: "Activate your AlphaReserve account",
   html: layout(
     "Your account is ready",
     `${greeting(name)}
-${p("An AlphaReserve account has been created for you. Sign in with the temporary password below, then set your own from <strong>Profile → Security</strong>.")}
+${p("An AlphaReserve account has been created for you. Choose your password to activate it — the link below is personal to you.")}
 ${details([
   ["Email", code(to)],
-  ["Temporary password", code(tempPassword)],
+  ["Link valid for", "72 hours"],
 ])}
-${button(appUrl("/login"), "Sign in")}
-${note("Keep this email private. The temporary password works until you change it.")}`,
-    "Your sign-in details for AlphaReserve."
+${button(link, "Set my password")}
+${note("Keep this email private: anyone with the link can set the password until it's used or expires.")}`,
+    "Choose your password to activate your AlphaReserve account."
   ),
 })
 
-export const buildPasswordResetByAdmin = (to: string, tempPassword: string, name?: string | null): MailMessage => ({
+export const buildPasswordResetByAdmin = (to: string, link: string, name?: string | null): MailMessage => ({
   to,
-  subject: "Your AlphaReserve password was reset",
+  subject: "Set a new AlphaReserve password",
   html: layout(
-    "Your password was reset",
+    "Set a new password",
     `${greeting(name)}
-${p("An administrator reset the password on your account and signed you out of every device. Sign in with the temporary password below, then choose a new one from <strong>Profile → Security</strong>.")}
+${p("An administrator reset the password on your account and signed you out of every device. Use the link below to choose a new password — nobody, including our team, can see it.")}
 ${details([
   ["Email", code(to)],
-  ["Temporary password", code(tempPassword)],
+  ["Link valid for", "24 hours"],
+  ["Can be used", "once"],
 ])}
-${button(appUrl("/login"), "Sign in")}
-${note("If you weren't expecting this, contact support before signing in.", "warn")}`,
-    "An administrator reset your password. Sign in with the temporary password inside."
+${button(link, "Choose a new password")}
+${note("If you weren't expecting this, contact support before using the link.", "warn")}`,
+    "An administrator reset your password. Choose a new one with this link."
   ),
 })
 
@@ -418,8 +419,8 @@ ${button(appUrl("/app/admin/communications"), "Back to Communications")}`,
 export const welcomeEmail = (to: string, name?: string | null) => sendMail(buildWelcome(to, name))
 export const passwordResetEmail = (to: string, token: string, name?: string | null) => sendMail(buildPasswordReset(to, token, name))
 export const passwordChangedEmail = (to: string, name?: string | null) => sendMail(buildPasswordChanged(to, name))
-export const accountCreatedByAdminEmail = (to: string, tempPassword: string, name?: string | null) => sendMail(buildAccountCreatedByAdmin(to, tempPassword, name))
-export const passwordResetByAdminEmail = (to: string, tempPassword: string, name?: string | null) => sendMail(buildPasswordResetByAdmin(to, tempPassword, name))
+export const accountCreatedByAdminEmail = (to: string, link: string, name?: string | null) => sendMail(buildAccountCreatedByAdmin(to, link, name))
+export const passwordResetByAdminEmail = (to: string, link: string, name?: string | null) => sendMail(buildPasswordResetByAdmin(to, link, name))
 export const depositReceivedEmail = (to: string, opts: Parameters<typeof buildDepositReceived>[1]) => sendMail(buildDepositReceived(to, opts))
 export const investmentDecisionEmail = (to: string, opts: Parameters<typeof buildInvestmentDecision>[1]) => sendMail(buildInvestmentDecision(to, opts))
 export const cycleCompletedEmail = (to: string, opts: Parameters<typeof buildCycleCompleted>[1]) => sendMail(buildCycleCompleted(to, opts))
@@ -442,8 +443,8 @@ export function sampleTemplates(): { key: string; label: string; message: MailMe
     { key: "cycle-completed", label: "Cycle completed", message: buildCycleCompleted(to, { amount: 2000, pool: "weekly", returnAmount: 20000, name }) },
     { key: "password-reset", label: "Password reset link", message: buildPasswordReset(to, "sample-token", name) },
     { key: "password-changed", label: "Password changed", message: buildPasswordChanged(to, name) },
-    { key: "account-created", label: "Account created by admin", message: buildAccountCreatedByAdmin(to, "Kdf2hThNH7ZZ", name) },
-    { key: "password-reset-admin", label: "Password reset by admin", message: buildPasswordResetByAdmin(to, "WneziccFum4e", name) },
+    { key: "account-created", label: "Account created by admin", message: buildAccountCreatedByAdmin(to, appUrl("/reset-password?token=sample-token&welcome=1"), name) },
+    { key: "password-reset-admin", label: "Password reset by admin", message: buildPasswordResetByAdmin(to, appUrl("/reset-password?token=sample-token"), name) },
     { key: "admin-new-deposit", label: "New deposit (admin notice)", message: buildNewDepositAdmin({ userEmail: to, userName: name, amount: 2000, pool: "weekly", txHash: "7f3a9c…e41b", investmentId: "inv_8k2m4q", network: "TRC20" }) ?? buildTest(to) },
     { key: "custom", label: "Admin message", message: buildCustom(to, { subject: "Weekly pool closes Friday", body: "The weekly pool closes this Friday at 18:00 UTC.\n\nDeposits confirmed before then are included in this cycle. Anything after rolls into next week's.", name, ctaLabel: "Open dashboard", ctaUrl: appUrl("/app") }) },
     { key: "test", label: "Test email", message: buildTest(to) },

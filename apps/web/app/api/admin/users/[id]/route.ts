@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getAdminUser, generateTempPassword, hashPassword, isStrongEnoughPassword } from "@/lib/auth"
+import { getAdminUser, hashPassword, isStrongEnoughPassword, createPasswordResetToken } from "@/lib/auth"
+import { appUrl } from "@/lib/mail"
 import { passwordResetByAdminEmail } from "@/lib/mail"
 import prisma from "@/lib/db"
 import { effectiveCycle } from "@/lib/trading"
@@ -146,9 +147,9 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
 
 /**
  * POST { action: "resetPassword", password? }
- * Sets a new (or generated temporary) password, signs the user out everywhere
- * and emails them the temporary password. The password is only returned to the
- * admin when it could not be emailed.
+ * Default: signs the user out everywhere and emails a single-use "choose a new
+ * password" link (24h). The link is returned to the admin only when it could
+ * not be emailed. With an explicit `password`, sets it directly instead.
  */
 export async function POST(request: NextRequest, { params }: Ctx) {
   try {
@@ -165,20 +166,23 @@ export async function POST(request: NextRequest, { params }: Ctx) {
     const target = await prisma.user.findUnique({ where: { id }, select: { id: true, email: true, name: true } })
     if (!target) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
-    const password: string = body.password || generateTempPassword()
-    await prisma.user.update({
-      where: { id },
-      data: { password: await hashPassword(password), tokenVersion: { increment: 1 } },
-    })
-    // Any outstanding "forgot password" links are now moot.
-    await prisma.passwordResetToken.updateMany({ where: { userId: id, usedAt: null }, data: { usedAt: new Date() } })
+    if (body.password) {
+      await prisma.user.update({ where: { id }, data: { password: await hashPassword(body.password), tokenVersion: { increment: 1 } } })
+      await prisma.passwordResetToken.updateMany({ where: { userId: id, usedAt: null }, data: { usedAt: new Date() } })
+      return NextResponse.json({ success: true, email: target.email, emailSent: false, mode: "password", sessionsRevoked: true })
+    }
 
-    const mail = await passwordResetByAdminEmail(target.email, password, target.name)
+    // Sign out everywhere now; the user picks a new password via the link.
+    await prisma.user.update({ where: { id }, data: { tokenVersion: { increment: 1 } } })
+    const token = await createPasswordResetToken(id, 24 * 60 * 60 * 1000)
+    const link = appUrl(`/reset-password?token=${encodeURIComponent(token)}`)
+    const mail = await passwordResetByAdminEmail(target.email, link, target.name)
     return NextResponse.json({
       success: true,
       email: target.email,
       emailSent: mail.sent,
-      tempPassword: mail.sent ? undefined : password,
+      mode: "link",
+      link: mail.sent ? undefined : link,
       sessionsRevoked: true,
     })
   } catch (error) {

@@ -217,8 +217,8 @@ export default function CommunicationsPage() {
             ["cycle-completed", "Cycle completed", "when you mark a cycle completed (payout)"],
             ["password-reset", "Password reset link", "from “Forgot password” (1-hour, single-use)"],
             ["password-changed", "Password changed", "after a reset or a change from the profile"],
-            ["account-created", "Account details", "when you add a user (temporary password)"],
-            ["password-reset-admin", "Password reset by admin", "when you reset someone from Users"],
+            ["account-created", "Account activation", "when you add a user (set-your-password link, 72h)"],
+            ["password-reset-admin", "Password reset by admin", "choose-a-new-password link (24h) when you reset someone"],
             ["admin-new-deposit", "New deposit request", `to ${data.adminEmail || "ADMIN_EMAIL"} for every submission`],
             ["custom", "Your messages", "what the compose form below sends"],
           ].map(([key, t, d]) => (

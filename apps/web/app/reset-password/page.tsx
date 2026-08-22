@@ -8,6 +8,7 @@ import { AuthShell, authInputCls, authButtonCls } from "@/app/components/auth-sh
 export default function ResetPasswordPage() {
   const router = useRouter()
   const [token, setToken] = React.useState<string | null>(null)
+  const [welcome, setWelcome] = React.useState(false)
   const [password, setPassword] = React.useState("")
   const [confirm, setConfirm] = React.useState("")
   const [loading, setLoading] = React.useState(false)
@@ -16,7 +17,9 @@ export default function ResetPasswordPage() {
 
   // Read the token on the client so this page can be statically rendered.
   React.useEffect(() => {
-    setToken(new URLSearchParams(window.location.search).get("token") || "")
+    const params = new URLSearchParams(window.location.search)
+    setToken(params.get("token") || "")
+    setWelcome(params.get("welcome") === "1")
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,7 +48,12 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <AuthShell heading="Choose a new password" tagline="Pick something you haven't used before. You'll be signed in fresh afterwards." title="New password" subtitle="Must be at least 6 characters">
+    <AuthShell
+      heading={welcome ? "Welcome to AlphaReserve" : "Choose a new password"}
+      tagline={welcome ? "Set your password to activate your account, then sign in to your dashboard." : "Pick something you haven't used before. You'll be signed in fresh afterwards."}
+      title={welcome ? "Set your password" : "New password"}
+      subtitle="Must be at least 6 characters"
+    >
       {token === "" ? (
         <div className="space-y-4">
           <div className="rounded-lg border border-destructive/25 bg-[var(--bg-danger)] p-3 text-xs text-destructive">
@@ -70,7 +78,7 @@ export default function ResetPasswordPage() {
             <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="••••••••" className={authInputCls} required minLength={6} autoComplete="new-password" />
           </div>
           <button type="submit" disabled={loading || token === null} className={authButtonCls}>
-            {loading ? "Updating…" : "Update password"}
+            {loading ? "Saving…" : welcome ? "Activate account" : "Update password"}
           </button>
         </form>
       )}

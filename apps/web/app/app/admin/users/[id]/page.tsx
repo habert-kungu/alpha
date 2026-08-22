@@ -67,9 +67,9 @@ export default function InvestorPage() {
       else {
         setNotice(
           json.emailSent ? (
-            <>Password reset — a temporary password was emailed to <strong>{json.email}</strong> and all their sessions ended.</>
+            <>Password reset — a link to choose a new password was emailed to <strong>{json.email}</strong> and all their sessions ended.</>
           ) : (
-            <>Password reset and sessions ended. Email isn't configured, so share this temporary password: <code className="rounded bg-secondary px-1.5 py-0.5 font-mono text-[12px]">{json.tempPassword}</code></>
+            <>Password reset and sessions ended. Email isn't configured, so send them this link (valid 24h): <code className="break-all rounded bg-secondary px-1.5 py-0.5 font-mono text-[11px]">{json.link}</code></>
           )
         )
         setConfirm(null)
@@ -255,7 +255,7 @@ export default function InvestorPage() {
 
       <Modal open={confirm === "reset"} onClose={() => !busy && setConfirm(null)} title="Reset password">
         <div className="space-y-4">
-          <p className="text-sm text-foreground">Generate a temporary password for <strong>{u.name || u.email}</strong>? They'll be signed out everywhere and emailed the new password.</p>
+          <p className="text-sm text-foreground">Generate a temporary password for <strong>{u.name || u.email}</strong>? They'll be signed out everywhere and emailed a link to choose a new password.</p>
           <div className="flex justify-end gap-2">
             <button onClick={() => setConfirm(null)} disabled={!!busy} className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground">Cancel</button>
             <button onClick={resetPassword} disabled={!!busy} className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{busy === "reset" ? "Resetting…" : "Reset & email"}</button>

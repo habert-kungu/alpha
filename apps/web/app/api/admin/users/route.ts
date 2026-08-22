@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getAdminUser, createUser, generateTempPassword, isStrongEnoughPassword } from "@/lib/auth"
-import { accountCreatedByAdminEmail } from "@/lib/mail"
+import { getAdminUser, createUser, generateTempPassword, isStrongEnoughPassword, createPasswordResetToken } from "@/lib/auth"
+import { accountCreatedByAdminEmail, appUrl } from "@/lib/mail"
 import prisma from "@/lib/db"
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -98,20 +98,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "A user with that email already exists" }, { status: 409 })
     }
 
-    const password: string = body.password || generateTempPassword()
-    const user = await createUser(email, password, name || undefined, telegram || undefined)
+    // Without an explicit password the account gets an unguessable placeholder
+    // and the user sets their own through a 72h activation link.
+    const explicit = typeof body.password === "string" && body.password !== ""
+    const user = await createUser(email, explicit ? body.password : generateTempPassword() + generateTempPassword(), name || undefined, telegram || undefined)
     if (role === "admin") {
       await prisma.user.update({ where: { id: user.id }, data: { role: "admin" } })
     }
 
-    const mail = await accountCreatedByAdminEmail(email, password, name || null)
+    let emailSent = false
+    let link: string | undefined
+    if (!explicit) {
+      const token = await createPasswordResetToken(user.id, 72 * 60 * 60 * 1000)
+      link = appUrl(`/reset-password?token=${encodeURIComponent(token)}&welcome=1`)
+      const mail = await accountCreatedByAdminEmail(email, link, name || null)
+      emailSent = mail.sent
+      if (emailSent) link = undefined
+    }
 
     return NextResponse.json({
       success: true,
       user: { id: user.id, email: user.email, name: user.name, telegram: user.telegram, role, createdAt: user.createdAt.toISOString() },
-      // Surface the temp password to the admin only when it could not be emailed.
-      tempPassword: mail.sent ? undefined : password,
-      emailSent: mail.sent,
+      emailSent,
+      // Only returned when the activation link could not be emailed.
+      link,
+      mode: explicit ? "password" : "link",
     })
   } catch (error) {
     console.error("Error creating user:", error)
