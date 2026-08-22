@@ -3,6 +3,7 @@
 import * as React from "react"
 import { Card, StatusPill } from "@/components/ui"
 import { Pagination } from "@/components/data-table"
+import Link from "next/link"
 import { useAuth } from "@/app/providers/auth-provider"
 import { useCachedFetch, invalidateCache } from "@/lib/use-cached-fetch"
 import { PageHeader, StatGrid, Skeleton, Modal, inputCls, formatDate } from "../_components"
@@ -50,6 +51,14 @@ export default function UsersPage() {
   const [showAdd, setShowAdd] = React.useState(false)
   const [removing, setRemoving] = React.useState<AdminUser | null>(null)
   const [resetting, setResetting] = React.useState<AdminUser | null>(null)
+  const [checked, setChecked] = React.useState<Set<string>>(new Set())
+  const toggleChecked = (id: string) =>
+    setChecked((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState("")
   const [notice, setNotice] = React.useState<React.ReactNode>(null)
@@ -191,6 +200,16 @@ export default function UsersPage() {
         title="Users"
         subtitle="Manage registered users"
         right={
+          <div className="flex items-center gap-2">
+          {checked.size > 0 && (
+            <Link
+              href={`/app/admin/communications?users=${Array.from(checked).join(",")}`}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-secondary"
+            >
+              <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" /></svg>
+              Email selected ({checked.size})
+            </Link>
+          )}
           <button
             onClick={() => {
               setError("")
@@ -201,6 +220,7 @@ export default function UsersPage() {
             <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M12 5v14M5 12h14" /></svg>
             Add user
           </button>
+          </div>
         }
       />
 
@@ -240,6 +260,21 @@ export default function UsersPage() {
           <table className="w-full min-w-[640px]">
             <thead className="bg-secondary/50">
               <tr>
+                <th className="w-8 px-3 py-2.5">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all on this page"
+                    className="h-3.5 w-3.5 accent-[var(--primary)]"
+                    checked={data.users.length > 0 && data.users.every((u) => checked.has(u.id))}
+                    onChange={(e) =>
+                      setChecked((prev) => {
+                        const next = new Set(prev)
+                        data.users.forEach((u) => (e.target.checked ? next.add(u.id) : next.delete(u.id)))
+                        return next
+                      })
+                    }
+                  />
+                </th>
                 <th className="px-3 py-2.5 text-left font-mono text-[9px] uppercase text-muted-foreground">User</th>
                 <th className="px-3 py-2.5 text-left font-mono text-[9px] uppercase text-muted-foreground">Telegram</th>
                 <th className="px-3 py-2.5 text-left font-mono text-[9px] uppercase text-muted-foreground">Role</th>
@@ -253,7 +288,10 @@ export default function UsersPage() {
               {data.users.map((u) => {
                 const isMe = u.id === me?.id
                 return (
-                  <tr key={u.id} className="hover:bg-secondary/30">
+                  <tr key={u.id} className={`hover:bg-secondary/30 ${checked.has(u.id) ? "bg-secondary/40" : ""}`}>
+                    <td className="px-3 py-2.5">
+                      <input type="checkbox" aria-label={`Select ${u.email}`} className="h-3.5 w-3.5 accent-[var(--primary)]" checked={checked.has(u.id)} onChange={() => toggleChecked(u.id)} />
+                    </td>
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-2">
                         <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-bold text-foreground">
@@ -313,7 +351,7 @@ export default function UsersPage() {
               })}
               {data.users.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                  <td colSpan={8} className="px-3 py-8 text-center text-sm text-muted-foreground">
                     {q ? `No users match “${q}”` : "No users yet"}
                   </td>
                 </tr>

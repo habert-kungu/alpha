@@ -17,7 +17,7 @@ const MAX_RECIPIENTS = 500
 /**
  * POST { action: "test" }                                  → sends a test email to the signed-in admin
  * POST { action: "send", to, subject, body, ctaLabel?, ctaUrl? }
- *   to: "all" | "users" | "admins" | "user:<id>" | "<email>"
+ *   to: "all" | "users" | "admins" | "selected" (+ userIds: string[]) | "user:<id>" | "<email>"
  */
 export async function POST(request: NextRequest) {
   try {
@@ -48,7 +48,11 @@ export async function POST(request: NextRequest) {
     if (to === "all") recipients = await prisma.user.findMany({ select: { email: true, name: true } })
     else if (to === "users") recipients = await prisma.user.findMany({ where: { role: "user" }, select: { email: true, name: true } })
     else if (to === "admins") recipients = await prisma.user.findMany({ where: { role: "admin" }, select: { email: true, name: true } })
-    else if (to.startsWith("user:")) {
+    else if (to === "selected") {
+      const ids = Array.isArray(body.userIds) ? body.userIds.filter((v: unknown): v is string => typeof v === "string").slice(0, MAX_RECIPIENTS) : []
+      if (ids.length === 0) return NextResponse.json({ error: "Select at least one investor" }, { status: 400 })
+      recipients = await prisma.user.findMany({ where: { id: { in: ids } }, select: { email: true, name: true } })
+    } else if (to.startsWith("user:")) {
       const u = await prisma.user.findUnique({ where: { id: to.slice(5) }, select: { email: true, name: true } })
       recipients = u ? [u] : []
     } else if (to.includes("@")) {
