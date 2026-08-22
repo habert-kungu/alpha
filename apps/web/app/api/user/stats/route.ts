@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
       .map((cycle: any) => ({
         id: cycle.id,
         pool: investments.find((inv: any) => inv.id === cycle.investmentId)?.pool || 'weekly',
+        roi: investments.find((inv: any) => inv.id === cycle.investmentId)?.roi ?? (cycle.startValue ? cycle.targetValue / cycle.startValue : 10),
         startValue: cycle.startValue,
         currentValue: cycle.currentValue,
         targetValue: cycle.targetValue,

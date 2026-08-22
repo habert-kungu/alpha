@@ -97,6 +97,7 @@ interface UserStats {
   activeCycles: {
     id: string
     pool: string
+    roi?: number
     startValue: number
     currentValue: number
     targetValue: number
@@ -255,7 +256,7 @@ export default function DashboardPage() {
                 {/* Start New Investment */}
                 <div className="flex items-center justify-between">
                   <div className="text-xs text-muted-foreground">
-                    ROI: <span className="text-[oklch(0.62_0.12_178)] font-medium">{activeCycle.pool === 'daily' ? '10x' : '10x'}</span>
+                    ROI: <span className="text-[oklch(0.62_0.12_178)] font-medium">{activeCycle.roi ?? Math.round((activeCycle.targetValue / (activeCycle.startValue || 1)) * 10) / 10}x</span>
                   </div>
                   <Link 
                     href="/app/investments"

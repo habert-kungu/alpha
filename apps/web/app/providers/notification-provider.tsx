@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Pusher from "pusher-js"
+import { invalidateCache } from "@/lib/use-cached-fetch"
 
 interface Notification {
   id: string
@@ -66,6 +67,7 @@ export function NotificationProvider({ children, userId, isAdmin }: { children: 
       })
 
       channel.bind("investment:approved", (data: any) => {
+        invalidateCache("/api/user/")
         addNotification({
           id: `inv-approved-${Date.now()}`,
           type: "success",
@@ -77,6 +79,7 @@ export function NotificationProvider({ children, userId, isAdmin }: { children: 
       })
 
       channel.bind("investment:rejected", (data: any) => {
+        invalidateCache("/api/user/")
         addNotification({
           id: `inv-rejected-${Date.now()}`,
           type: "error",
@@ -87,7 +90,20 @@ export function NotificationProvider({ children, userId, isAdmin }: { children: 
         })
       })
 
+      channel.bind("investment:updated", (data: any) => {
+        invalidateCache("/api/user/")
+        addNotification({
+          id: `inv-updated-${Date.now()}`,
+          type: "investment",
+          title: "Plan updated",
+          message: data.message || "Your investment plan was adjusted by the admin.",
+          timestamp: new Date(),
+          read: false,
+        })
+      })
+
       channel.bind("cycle:completed", (data: any) => {
+        invalidateCache("/api/user/")
         addNotification({
           id: `cycle-completed-${Date.now()}`,
           type: "success",

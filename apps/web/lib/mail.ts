@@ -218,6 +218,17 @@ ${button(appUrl("/app/transactions"), "View status")}`),
   })
 }
 
+export function cycleCompletedEmail(to: string, opts: { amount: number; pool: string; returnAmount: number; name?: string | null }) {
+  const poolLabel = opts.pool === "daily" ? "48H Pool" : "Weekly Pool"
+  return sendMail({
+    to,
+    subject: `Cycle complete — $${opts.returnAmount.toLocaleString()} ready`,
+    html: layout("Your cycle is complete", `<p>${opts.name ? `Hi ${escape(opts.name)},` : "Hi,"}</p>
+<p>Your <strong>${poolLabel}</strong> cycle on <strong>$${opts.amount.toLocaleString()}</strong> has completed. Your return of <strong>$${opts.returnAmount.toLocaleString()}</strong> is now available on your dashboard.</p>
+${button(appUrl("/app/withdraw"), "Withdraw")}`),
+  })
+}
+
 export function newDepositAdminEmail(opts: { userEmail: string; userName?: string | null; amount: number; pool: string; txHash: string; investmentId: string; network?: string }) {
   const to = process.env.ADMIN_EMAIL
   if (!to) return Promise.resolve({ sent: false, error: "ADMIN_EMAIL not set" })
