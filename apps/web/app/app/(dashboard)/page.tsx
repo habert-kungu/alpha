@@ -211,11 +211,13 @@ export default function DashboardPage() {
       const liveProgress = Math.min(100, progress + elapsed * ratePerMs)
       const anchor = startValue + (targetValue - startValue) * (liveProgress / 100)
       const level = Math.max(1, anchor)
-      // Per-tick volatility ~0.25% of price, a touch more as the cycle matures.
-      const vol = level * (0.0025 + 0.004 * (liveProgress / 100))
+      // Per-tick volatility ~0.7% of price, up to ~1.5% as the cycle matures,
+      // with occasional spikes so the feed has real punch.
+      const vol = level * (0.007 + 0.008 * (liveProgress / 100))
+      const spike = Math.random() < 0.08 ? (Math.random() - 0.5) * vol * 4 : 0
       const st = walkRef.current
-      st.momentum = st.momentum * 0.8 + (Math.random() - 0.5) * vol * 1.4
-      st.walk = (st.walk + st.momentum + (Math.random() - 0.5) * vol) * 0.96
+      st.momentum = st.momentum * 0.82 + (Math.random() - 0.5) * vol * 1.8 + spike
+      st.walk = (st.walk + st.momentum + (Math.random() - 0.5) * vol) * 0.97
       const next = Math.round(Math.max(startValue * 0.93, Math.min(targetValue, anchor + st.walk)) * 100) / 100
       setChartData((prev) => (prev.length ? [...prev.slice(1), next] : prev))
       setLiveValue(next)
