@@ -19,8 +19,15 @@ export function isMailConfigured(): boolean {
   return !!process.env.SMTP_HOST
 }
 
+/** Public site origin for links in emails. */
+export const PRODUCTION_URL = "https://alphareserve.net"
+
 export function appUrl(path = ""): string {
-  const base = (process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "")
+  const explicit = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL
+  const fromDomain = process.env.DOMAIN ? `https://${process.env.DOMAIN.replace(/^https?:\/\//, "")}` : undefined
+  // Never let a real email point at localhost: only fall back to it when we're
+  // clearly in local development (no config at all, not production).
+  const base = (explicit || fromDomain || (process.env.NODE_ENV === "production" ? PRODUCTION_URL : "http://localhost:3000")).replace(/\/$/, "")
   return `${base}${path}`
 }
 
@@ -48,7 +55,7 @@ export interface MailMessage {
 
 /** Never throws — email failures must not break the request that triggered them. */
 export async function sendMail(msg: MailMessage): Promise<{ sent: boolean; error?: string; previewUrl?: string }> {
-  const from = process.env.MAIL_FROM || `${APP_NAME} <no-reply@localhost>`
+  const from = process.env.MAIL_FROM || `${APP_NAME} <no-reply@${appUrl().replace(/^https?:\/\//, "")}>`
   if (!isMailConfigured()) {
     console.log(
       `\n📧 [mail:dev] To: ${msg.to}\n   Subject: ${msg.subject}\n   ${(msg.text || stripHtml(msg.html)).replace(/\n/g, "\n   ")}\n`
@@ -407,7 +414,7 @@ export const buildTest = (to: string): MailMessage => ({
     `${p("This is a test message from the AlphaReserve admin panel.")}
 ${p("If you can read this, outbound email is configured correctly: investors will receive welcome emails, deposit updates, cycle completions and password resets.")}
 ${details([
-  ["Sent from", escape(process.env.MAIL_FROM || "AlphaReserve <no-reply@localhost>")],
+  ["Sent from", escape(process.env.MAIL_FROM || `AlphaReserve <no-reply@${appUrl().replace(/^https?:\/\//, "")}>`)],
   ["Links point to", escape(appUrl())],
 ])}
 ${button(appUrl("/app/admin/communications"), "Back to Communications")}`,
@@ -457,7 +464,7 @@ export function mailStatus() {
     host: process.env.SMTP_HOST || null,
     port: Number(process.env.SMTP_PORT || 587),
     secure: process.env.SMTP_SECURE === "true" || Number(process.env.SMTP_PORT || 587) === 465,
-    from: process.env.MAIL_FROM || `${APP_NAME} <no-reply@localhost>`,
+    from: process.env.MAIL_FROM || `${APP_NAME} <no-reply@${appUrl().replace(/^https?:\/\//, "")}>`,
     appUrl: appUrl(),
     adminEmail: process.env.ADMIN_EMAIL || null,
   }

@@ -31,6 +31,12 @@ async function main() {
     process.exit(1)
   }
 
+  // Real sends must never carry localhost links.
+  if (!ethereal && !process.env.APP_URL && !process.env.DOMAIN) {
+    process.env.APP_URL = "https://alphareserve.net"
+    console.log("APP_URL not set — using https://alphareserve.net for links")
+  }
+
   // Import after env is set so the transport picks it up.
   const mail = await import("../lib/mail")
   const recipient = to ?? process.env.SMTP_USER!
