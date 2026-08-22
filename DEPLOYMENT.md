@@ -51,6 +51,33 @@ in the `Dockerfile` builder stage.
 | `APP_URL`                      | No       | Public origin used in emailed links. Defaults to `https://$DOMAIN`. |
 | `ADMIN_EMAIL`                  | No       | Receives a notice for every new deposit request. |
 
+### Ultahost email (Open-Xchange)
+
+Ultahost's mailboxes are hosted on Open-Xchange Cloud (`*.cloudeu.xion.oxcs.net`),
+**not** on the VPS. Use the OX SMTP relay with the full mailbox address as the user:
+
+```
+SMTP_HOST=smtp.cloudeu.xion.oxcs.net
+SMTP_PORT=465
+SMTP_SECURE=true            # or SMTP_PORT=587 + SMTP_SECURE=false (STARTTLS)
+SMTP_USER=no-reply@alphareserve.net   # the full mailbox address
+SMTP_PASS=...                         # that mailbox's password
+MAIL_FROM="AlphaReserve <no-reply@alphareserve.net>"   # must be the same mailbox (OX rejects other senders)
+```
+
+The DNS zone must point mail at OX, otherwise connections go to the web VPS and
+fail with `ECONNREFUSED`:
+
+| Type | Host | Value |
+|------|------|-------|
+| MX   | `@`  | `10 mx001.cloudeu.xion.oxcs.net` … `mx004.cloudeu.xion.oxcs.net` (replace any MX pointing at the VPS) |
+| TXT  | `@`  | `v=spf1 include:spf.cloudeu.xion.oxcs.net ~all` |
+| CNAME| `smtp`, `imap` | `smtp.cloudeu.xion.oxcs.net`, `imap.cloudeu.xion.oxcs.net` (optional, for mail clients) |
+
+Leave `A @` / `www` on the VPS for the website. Remove or repoint `A mail` if it
+targets the VPS. DKIM: copy the selector record from the Ultahost/OX control
+panel if one is offered — it's the biggest factor in staying out of spam.
+
 ### Verifying email
 
 - **Admin panel → Communications** shows whether SMTP is configured, live-checks the connection, sends you a test email, and lets you message all investors / admins / one address with the branded template.
