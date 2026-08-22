@@ -96,7 +96,7 @@ function MobileTabBar({ pathname, onMenu }: { pathname: string; onMenu: () => vo
     { href: "/app/explore", label: "Markets", icon: "globe" },
   ]
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
+    <nav className="z-40 flex flex-shrink-0 items-stretch border-t border-border bg-card pb-[env(safe-area-inset-bottom)] lg:hidden">
       {tabs.map((t) => {
         const active = t.href === "/app" ? pathname === "/app" : pathname.startsWith(t.href)
         return (
@@ -165,10 +165,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <NotificationProvider userId={user?.id} isAdmin={isAdmin}>
-      <div className="flex min-h-screen bg-background">
+      <div className="flex h-dvh min-h-0 bg-background">
         {/* Sidebar */}
         <aside
-          className={`fixed top-0 z-50 flex h-screen w-60 flex-col border-r border-border bg-sidebar transition-transform lg:sticky lg:translate-x-0 ${
+          className={`fixed top-0 z-50 flex h-dvh w-60 flex-col border-r border-border bg-sidebar transition-transform lg:static lg:h-auto lg:translate-x-0 ${
             mobileOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >
@@ -236,8 +236,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
 
         {/* Main content */}
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-border bg-card/80 px-4 backdrop-blur-md sm:px-6">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+          <header className="sticky top-0 z-20 flex h-16 flex-shrink-0 items-center justify-between gap-3 border-b border-border bg-card/80 px-4 backdrop-blur-md sm:px-6">
             <div className="flex min-w-0 items-center gap-3">
               <button
                 onClick={() => setMobileOpen(true)}
@@ -256,12 +257,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </header>
 
-          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 pb-24 sm:px-6 sm:py-7 lg:pb-7">{children}</main>
+          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-5 sm:px-6 sm:py-7">{children}</main>
+          </div>
           <ToastNotification />
+          {/* App-style bottom nav (mobile only) — a footer of the shell, not a fixed overlay */}
+          <MobileTabBar pathname={pathname} onMenu={() => setMobileOpen(true)} />
         </div>
 
-        {/* App-style bottom nav (mobile only) */}
-        <MobileTabBar pathname={pathname} onMenu={() => setMobileOpen(true)} />
       </div>
     </NotificationProvider>
   )

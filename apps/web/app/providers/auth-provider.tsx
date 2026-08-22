@@ -12,10 +12,20 @@ interface User {
   telegram: string | null
 }
 
+export interface SignInResult {
+  requiresTwoFactor?: boolean
+  /** Masked address the code was sent to, e.g. "ha••••@gmail.com". */
+  email?: string
+  emailSent?: boolean
+}
+
 interface AuthContextType {
   user: User | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<void>
+  /** Resolves with `requiresTwoFactor: true` when a code step is needed; otherwise redirects. */
+  signIn: (email: string, password: string) => Promise<SignInResult>
+  verifyTwoFactor: (code: string) => Promise<void>
+  resendTwoFactor: () => Promise<SignInResult>
   signUp: (data: { name: string; email: string; password: string; telegram?: string }) => Promise<void>
   signOut: () => Promise<void>
   refreshUser: () => Promise<void>
@@ -94,7 +104,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     void refreshUser()
   }, [refreshUser])
 
-  const signIn = async (email: string, password: string) => {
+  const finishSignIn = (u: User) => {
+    clearCache()
+    setUser(u)
+    router.push(landingFor(u))
+  }
+
+  const signIn = async (email: string, password: string): Promise<SignInResult> => {
     const res = await fetch("/api/auth/signin", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -102,9 +118,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error || "Login failed")
-    clearCache()
-    setUser(data.user)
-    router.push(landingFor(data.user))
+    if (data.requiresTwoFactor) return { requiresTwoFactor: true, email: data.email, emailSent: data.emailSent }
+    finishSignIn(data.user)
+    return {}
+  }
+
+  const verifyTwoFactor = async (code: string) => {
+    const res = await fetch("/api/auth/2fa/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || "Verification failed")
+    finishSignIn(data.user)
+  }
+
+  const resendTwoFactor = async (): Promise<SignInResult> => {
+    const res = await fetch("/api/auth/2fa/resend", { method: "POST" })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || "Couldn't resend the code")
+    return { requiresTwoFactor: true, email: data.email, emailSent: data.emailSent }
   }
 
   const signUp = async (payload: { name: string; email: string; password: string; telegram?: string }) => {
@@ -130,7 +164,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  return <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, refreshUser, setUser }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ user, loading, signIn, verifyTwoFactor, resendTwoFactor, signUp, signOut, refreshUser, setUser }}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {

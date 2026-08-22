@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { validateUser, setSessionCookie } from "@/lib/auth"
+import { validateUser, setSessionCookie, createTwoFactorCode, createMfaChallenge, setMfaCookie, maskEmail } from "@/lib/auth"
+import { loginCodeEmail } from "@/lib/mail"
 import { checkRateLimit, getRateLimitResetSeconds, clearRateLimit } from "@/lib/rate-limit"
 
 export async function POST(request: NextRequest) {
@@ -24,6 +25,16 @@ export async function POST(request: NextRequest) {
     }
 
     clearRateLimit(rateLimitKey)
+
+    if (user.twoFactorEnabled) {
+      // Password accepted; hold the session behind a short-lived challenge and
+      // email a one-time code. The real session cookie is only set by /2fa/verify.
+      const code = await createTwoFactorCode(user.id, "login")
+      const mail = await loginCodeEmail(user.email, code, { purpose: "login", name: user.name })
+      const challenge = await createMfaChallenge(user)
+      const res = NextResponse.json({ requiresTwoFactor: true, email: maskEmail(user.email), emailSent: mail.sent })
+      return setMfaCookie(res, challenge)
+    }
 
     const response = NextResponse.json({
       user: { id: user.id, email: user.email, name: user.name, role: user.role, telegram: user.telegram },

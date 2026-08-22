@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getAdminUser, hashPassword, isStrongEnoughPassword, createPasswordResetToken } from "@/lib/auth"
-import { appUrl } from "@/lib/mail"
+import { appUrl, twoFactorChangedEmail } from "@/lib/mail"
 import { passwordResetByAdminEmail } from "@/lib/mail"
 import prisma from "@/lib/db"
 import { effectiveCycle } from "@/lib/trading"
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest, { params }: Ctx) {
     const { id } = await params
     const user = await prisma.user.findUnique({
       where: { id },
-      select: { id: true, email: true, name: true, telegram: true, walletAddress: true, role: true, createdAt: true },
+      select: { id: true, email: true, name: true, telegram: true, walletAddress: true, role: true, createdAt: true, twoFactorEnabled: true },
     })
     if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
@@ -118,7 +118,10 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
 
     const { id } = await params
     const body = await request.json()
-    const data: { role?: string; name?: string; telegram?: string | null } = {}
+    const data: { role?: string; name?: string; telegram?: string | null; twoFactorEnabled?: boolean } = {}
+
+    // Admin can switch two-step OFF for a locked-out investor (never on — that needs their inbox).
+    if (body.twoFactorEnabled === false) data.twoFactorEnabled = false
 
     if (body.role !== undefined) {
       if (!["admin", "user"].includes(body.role)) {
@@ -136,8 +139,9 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
       where: { id },
       // A role change invalidates the user's sessions so the old role can't linger in a JWT.
       data: data.role !== undefined ? { ...data, tokenVersion: { increment: 1 } } : data,
-      select: { id: true, email: true, name: true, telegram: true, role: true },
+      select: { id: true, email: true, name: true, telegram: true, role: true, twoFactorEnabled: true },
     })
+    if (data.twoFactorEnabled === false) void twoFactorChangedEmail(user.email, false, user.name)
     return NextResponse.json({ success: true, user })
   } catch (error) {
     console.error("Error updating user:", error)

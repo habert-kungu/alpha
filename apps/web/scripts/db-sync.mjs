@@ -31,6 +31,26 @@ try {
     console.log("→ db-sync: added Cycle.progressAt")
   }
 
+  if (!(await hasColumn("User", "twoFactorEnabled"))) {
+    await prisma.$executeRawUnsafe(`ALTER TABLE "User" ADD COLUMN "twoFactorEnabled" BOOLEAN NOT NULL DEFAULT false`)
+    console.log("→ db-sync: added User.twoFactorEnabled")
+  }
+  if (!(await hasTable("TwoFactorCode"))) {
+    await prisma.$executeRawUnsafe(`CREATE TABLE "TwoFactorCode" (
+      "id" TEXT NOT NULL PRIMARY KEY,
+      "userId" TEXT NOT NULL,
+      "purpose" TEXT NOT NULL,
+      "codeHash" TEXT NOT NULL,
+      "attempts" INTEGER NOT NULL DEFAULT 0,
+      "expiresAt" DATETIME NOT NULL,
+      "usedAt" DATETIME,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "TwoFactorCode_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )`)
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "TwoFactorCode_userId_purpose_idx" ON "TwoFactorCode"("userId", "purpose")`)
+    console.log("→ db-sync: created TwoFactorCode")
+  }
+
   if (!(await hasTable("PasswordResetToken"))) {
     await prisma.$executeRawUnsafe(`CREATE TABLE "PasswordResetToken" (
       "id" TEXT NOT NULL PRIMARY KEY,

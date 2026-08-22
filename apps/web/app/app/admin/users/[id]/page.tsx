@@ -10,7 +10,7 @@ import { ActionMenu, KV, Modal, Skeleton, StatGrid, formatDate } from "../../_co
 import { AdjustInvestmentModal, type AdminInvestment } from "../../_adjust-modal"
 
 interface Detail {
-  user: { id: string; email: string; name: string | null; telegram: string | null; walletAddress: string | null; role: string; createdAt: string }
+  user: { id: string; email: string; name: string | null; telegram: string | null; walletAddress: string | null; role: string; createdAt: string; twoFactorEnabled?: boolean }
   stats: { deposited: number; returns: number; active: number; pending: number; completed: number }
   investments: AdminInvestment[]
   transactions: { id: string; type: string; amount: number; net: number; fee: number; status: string; note: string | null; txHash: string | null; createdAt: string }[]
@@ -97,6 +97,22 @@ export default function InvestorPage() {
     }
   }
 
+  const disableTwoFactor = async () => {
+    setBusy("2fa")
+    setErr("")
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ twoFactorEnabled: false }) })
+      const json = await res.json()
+      if (!res.ok) setErr(json.error || "Failed")
+      else {
+        setNotice("Two-step verification turned off for this account — they can sign in with just their password and were emailed about the change.")
+        await reload()
+      }
+    } finally {
+      setBusy(null)
+    }
+  }
+
   const remove = async () => {
     setBusy("remove")
     setErr("")
@@ -150,6 +166,7 @@ export default function InvestorPage() {
             <ActionMenu
               items={[
                 { label: "Reset password", onClick: () => setConfirm("reset") },
+                { label: "Turn off two-step verification", onClick: disableTwoFactor, disabled: !u.twoFactorEnabled || busy === "2fa", title: u.twoFactorEnabled ? "Use when an investor can't receive their sign-in codes" : "Not enabled on this account" },
                 { label: u.role === "admin" ? "Make regular user" : "Make admin", onClick: toggleRole, disabled: isMe, title: isMe ? "You can't change your own role" : undefined },
                 { label: "Remove user", onClick: () => setConfirm("remove"), danger: true, disabled: isMe, title: isMe ? "You can't remove your own account" : undefined },
               ]}
@@ -160,6 +177,7 @@ export default function InvestorPage() {
         <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-border pt-4 text-xs sm:grid-cols-2">
           <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Telegram</dt><dd className="text-foreground">{u.telegram ? <a href={`https://t.me/${u.telegram.replace(/^@/, "")}`} target="_blank" rel="noreferrer" className="hover:underline">{u.telegram}</a> : "—"}</dd></div>
           <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Joined</dt><dd className="text-foreground">{formatDate(u.createdAt)}</dd></div>
+          <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Two-step verification</dt><dd className={u.twoFactorEnabled ? "text-[var(--color-success)]" : "text-muted-foreground"}>{u.twoFactorEnabled ? "On (email code)" : "Off"}</dd></div>
           <div className="flex justify-between gap-3 sm:col-span-2"><dt className="text-muted-foreground">Withdrawal wallet</dt><dd className="break-all font-mono text-foreground">{u.walletAddress || "—"}</dd></div>
         </dl>
       </Card>

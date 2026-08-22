@@ -5,7 +5,17 @@ import Link from "next/link"
 import { useAuth } from "@/app/providers/auth-provider"
 
 export default function LoginPage() {
-  const { signIn } = useAuth()
+  const { signIn, verifyTwoFactor, resendTwoFactor } = useAuth()
+  const [step, setStep] = React.useState<"password" | "code">("password")
+  const [maskedEmail, setMaskedEmail] = React.useState("")
+  const [code, setCode] = React.useState("")
+  const [resendIn, setResendIn] = React.useState(0)
+
+  React.useEffect(() => {
+    if (resendIn <= 0) return
+    const t = setTimeout(() => setResendIn((n) => n - 1), 1000)
+    return () => clearTimeout(t)
+  }, [resendIn])
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
   const [loading, setLoading] = React.useState(false)
@@ -25,10 +35,40 @@ export default function LoginPage() {
     try {
       // Use the auth provider so the user is hydrated in context (the dashboard
       // gates its data fetch on `user`), then it handles the redirect.
-      await signIn(email, password)
+      const result = await signIn(email, password)
+      if (result.requiresTwoFactor) {
+        setMaskedEmail(result.email || "your email")
+        setStep("code")
+        setResendIn(30)
+        setLoading(false)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred. Please try again.")
       setLoading(false)
+    }
+  }
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+    setLoading(true)
+    try {
+      await verifyTwoFactor(code)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Verification failed")
+      setLoading(false)
+    }
+  }
+
+  const handleResend = async () => {
+    setError("")
+    try {
+      const r = await resendTwoFactor()
+      setMaskedEmail(r.email || maskedEmail)
+      setNotice(`A new code was sent to ${r.email || maskedEmail}.`)
+      setResendIn(30)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't resend the code")
     }
   }
 
@@ -79,8 +119,10 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          <h1 className="text-xl font-bold text-foreground mb-1">Sign in</h1>
-          <p className="text-muted-foreground text-sm mb-6">Enter your credentials</p>
+          <h1 className="text-xl font-bold text-foreground mb-1">{step === "code" ? "Check your email" : "Sign in"}</h1>
+          <p className="text-muted-foreground text-sm mb-6">
+            {step === "code" ? <>We sent a 6-digit code to <span className="font-medium text-foreground">{maskedEmail}</span>. It's valid for 10 minutes.</> : "Enter your credentials"}
+          </p>
 
           {notice && !error && (
             <div className="mb-4 rounded-lg border border-[var(--color-success)]/25 bg-[var(--bg-success)] p-3 text-xs text-foreground">
@@ -93,6 +135,41 @@ export default function LoginPage() {
             </div>
           )}
 
+          {step === "code" ? (
+            <form onSubmit={handleVerify} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Verification code</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]{6}"
+                  maxLength={6}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="123456"
+                  autoFocus
+                  className="w-full px-3 py-2.5 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground focus:ring-1 focus:ring-foreground transition-colors text-center font-mono text-lg tracking-[0.4em]"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading || code.length !== 6}
+                className="w-full py-2.5 bg-foreground text-background rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                {loading ? "Verifying…" : "Verify and sign in"}
+              </button>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <button type="button" onClick={handleResend} disabled={resendIn > 0} className="hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60">
+                  {resendIn > 0 ? `Resend code in ${resendIn}s` : "Resend code"}
+                </button>
+                <button type="button" onClick={() => { setStep("password"); setCode(""); setError(""); setNotice("") }} className="hover:text-foreground">
+                  Use a different account
+                </button>
+              </div>
+            </form>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
@@ -131,6 +208,7 @@ export default function LoginPage() {
               {loading ? "Signing in..." : "Sign in"}
             </button>
           </form>
+          )}
 
           <div className="mt-5 text-center">
             <p className="text-muted-foreground text-sm">

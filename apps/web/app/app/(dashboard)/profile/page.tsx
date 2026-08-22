@@ -54,6 +54,44 @@ export default function ProfilePage() {
   const [pw, setPw] = React.useState({ current: "", next: "", confirm: "" })
   const [pwBusy, setPwBusy] = React.useState(false)
   const [pwMsg, setPwMsg] = React.useState<{ tone: "ok" | "err"; text: string } | null>(null)
+  const { data: tfa, setData: setTfa } = useCachedFetch<{ enabled: boolean; email: string }>(session ? "/api/user/2fa" : null, { ttl: 60_000 })
+  const [tfaStep, setTfaStep] = React.useState<"idle" | "code" | "disable">("idle")
+  const [tfaCode, setTfaCode] = React.useState("")
+  const [tfaPassword, setTfaPassword] = React.useState("")
+  const [tfaBusy, setTfaBusy] = React.useState(false)
+  const [tfaMsg, setTfaMsg] = React.useState<{ tone: "ok" | "err"; text: string } | null>(null)
+
+  const tfaPost = async (body: Record<string, unknown>) => {
+    const res = await fetch("/api/user/2fa", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error || "Something went wrong")
+    return json
+  }
+  const startTfa = async () => {
+    setTfaBusy(true); setTfaMsg(null)
+    try {
+      const r = await tfaPost({ action: "start" })
+      setTfaStep("code")
+      setTfaMsg({ tone: "ok", text: r.emailSent ? `We emailed a 6-digit code to ${p?.email ?? "your address"}.` : "Email isn't configured on this server — the code was written to the server log." })
+    } catch (err) { setTfaMsg({ tone: "err", text: err instanceof Error ? err.message : "Failed" }) } finally { setTfaBusy(false) }
+  }
+  const enableTfa = async (e: React.FormEvent) => {
+    e.preventDefault(); setTfaBusy(true); setTfaMsg(null)
+    try {
+      await tfaPost({ action: "enable", code: tfaCode })
+      setTfa({ enabled: true, email: tfa?.email ?? "" }); setTfaStep("idle"); setTfaCode("")
+      setTfaMsg({ tone: "ok", text: "Two-step verification is on. You'll be asked for an emailed code whenever you sign in." })
+    } catch (err) { setTfaMsg({ tone: "err", text: err instanceof Error ? err.message : "Failed" }) } finally { setTfaBusy(false) }
+  }
+  const disableTfa = async (e: React.FormEvent) => {
+    e.preventDefault(); setTfaBusy(true); setTfaMsg(null)
+    try {
+      await tfaPost({ action: "disable", password: tfaPassword })
+      setTfa({ enabled: false, email: tfa?.email ?? "" }); setTfaStep("idle"); setTfaPassword("")
+      setTfaMsg({ tone: "ok", text: "Two-step verification is off. Other devices were signed out." })
+    } catch (err) { setTfaMsg({ tone: "err", text: err instanceof Error ? err.message : "Failed" }) } finally { setTfaBusy(false) }
+  }
+
   const [revoking, setRevoking] = React.useState(false)
   const [revokeMsg, setRevokeMsg] = React.useState<{ tone: "ok" | "err"; text: string } | null>(null)
 
@@ -294,6 +332,54 @@ export default function ProfilePage() {
                     {pwBusy ? "Updating…" : "Update password"}
                   </button>
                 </div>
+              </form>
+            )}
+          </div>
+
+          <div className="rounded-lg bg-secondary/50 p-3 sm:p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2 text-xs font-medium text-foreground sm:text-sm">
+                  Two-step verification
+                  {tfa && (
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${tfa.enabled ? "bg-[var(--bg-success)] text-[var(--color-success)]" : "bg-secondary text-muted-foreground"}`}>{tfa.enabled ? "On" : "Off"}</span>
+                  )}
+                </div>
+                <div className="text-[10px] text-muted-foreground sm:text-xs">{tfa?.enabled ? "Signing in needs your password and a code we email you." : "Add a second step: a 6-digit code emailed to you at every sign-in."}</div>
+              </div>
+              {tfa && tfaStep === "idle" && (
+                <button
+                  onClick={() => { setTfaMsg(null); if (tfa.enabled) setTfaStep("disable"); else void startTfa() }}
+                  disabled={tfaBusy}
+                  className="text-xs font-medium text-foreground hover:underline disabled:opacity-50 sm:text-sm"
+                >
+                  {tfaBusy ? "Sending…" : tfa.enabled ? "Turn off" : "Turn on"}
+                </button>
+              )}
+              {tfaStep !== "idle" && (
+                <button onClick={() => { setTfaStep("idle"); setTfaMsg(null); setTfaCode(""); setTfaPassword("") }} className="text-xs font-medium text-muted-foreground hover:text-foreground sm:text-sm">Cancel</button>
+              )}
+            </div>
+            {tfaMsg && <p className={`mt-2 text-xs ${tfaMsg.tone === "ok" ? "text-[var(--color-success)]" : "text-destructive"}`}>{tfaMsg.text}</p>}
+            {tfaStep === "code" && (
+              <form onSubmit={enableTfa} className="mt-3 flex flex-col gap-2 border-t border-border/60 pt-3 sm:flex-row sm:items-end">
+                <div className="flex-1">
+                  <label className="mb-1 block text-xs font-medium text-foreground">Enter the 6-digit code</label>
+                  <input className={`${inputCls} font-mono tracking-[0.3em]`} inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={tfaCode} onChange={(e) => setTfaCode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="123456" autoFocus />
+                </div>
+                <div className="flex gap-2">
+                  <button type="button" onClick={startTfa} disabled={tfaBusy} className="rounded-lg border border-border px-3 py-2.5 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground disabled:opacity-50">Resend</button>
+                  <button type="submit" disabled={tfaBusy || tfaCode.length !== 6} className="rounded-lg bg-foreground px-4 py-2.5 text-xs font-medium text-background hover:opacity-90 disabled:opacity-50">{tfaBusy ? "Checking…" : "Turn on"}</button>
+                </div>
+              </form>
+            )}
+            {tfaStep === "disable" && (
+              <form onSubmit={disableTfa} className="mt-3 flex flex-col gap-2 border-t border-border/60 pt-3 sm:flex-row sm:items-end">
+                <div className="flex-1">
+                  <label className="mb-1 block text-xs font-medium text-foreground">Confirm with your password</label>
+                  <input className={inputCls} type="password" autoComplete="current-password" value={tfaPassword} onChange={(e) => setTfaPassword(e.target.value)} autoFocus required />
+                </div>
+                <button type="submit" disabled={tfaBusy || !tfaPassword} className="rounded-lg bg-destructive px-4 py-2.5 text-xs font-medium text-destructive-foreground hover:opacity-90 disabled:opacity-50">{tfaBusy ? "Turning off…" : "Turn off two-step"}</button>
               </form>
             )}
           </div>

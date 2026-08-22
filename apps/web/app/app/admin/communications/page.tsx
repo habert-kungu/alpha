@@ -215,6 +215,8 @@ export default function CommunicationsPage() {
             ["deposit-confirmed", "Deposit confirmed", "when you approve a deposit"],
             ["deposit-rejected", "Deposit not confirmed", "when you reject a deposit"],
             ["cycle-completed", "Cycle completed", "when you mark a cycle completed (payout)"],
+            ["login-code", "Sign-in code", "6-digit two-step code at every sign-in (when the investor has it on)"],
+            ["two-factor-on", "Two-step on / off", "confirmation when the setting changes"],
             ["password-reset", "Password reset link", "from “Forgot password” (1-hour, single-use)"],
             ["password-changed", "Password changed", "after a reset or a change from the profile"],
             ["account-created", "Account activation", "when you add a user (set-your-password link, 72h)"],

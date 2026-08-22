@@ -85,6 +85,7 @@ export async function validateUser(email: string, password: string) {
     role: user.role,
     telegram: user.telegram,
     tokenVersion: user.tokenVersion,
+    twoFactorEnabled: user.twoFactorEnabled,
   }
 }
 // ---------------------------------------------------------------------------
@@ -218,4 +219,88 @@ export function generateTempPassword(): string {
   let out = ""
   for (let i = 0; i < 12; i++) out += alphabet[bytes[i]! % alphabet.length]
   return out
+}
+
+// ---------------------------------------------------------------------------
+// Email two-step verification (6-digit codes, hashed at rest)
+// ---------------------------------------------------------------------------
+
+export const TWO_FACTOR_CODE_TTL_MS = 10 * 60 * 1000
+export const TWO_FACTOR_MAX_ATTEMPTS = 5
+export const MFA_COOKIE = "mfa"
+
+function hashCode(userId: string, code: string): string {
+  return createHash("sha256").update(`${userId}:${code}`).digest("hex")
+}
+
+/** Creates a fresh code for the user (invalidating older ones of the same purpose). Returns the plain code for emailing. */
+export async function createTwoFactorCode(userId: string, purpose: "login" | "enable"): Promise<string> {
+  const code = String(randomBytes(4).readUInt32BE(0) % 1_000_000).padStart(6, "0")
+  await prisma.twoFactorCode.updateMany({ where: { userId, purpose, usedAt: null }, data: { usedAt: new Date() } })
+  await prisma.twoFactorCode.create({
+    data: { userId, purpose, codeHash: hashCode(userId, code), expiresAt: new Date(Date.now() + TWO_FACTOR_CODE_TTL_MS) },
+  })
+  return code
+}
+
+/** Seconds until another code may be issued (30s cooldown), or 0. */
+export async function twoFactorCooldown(userId: string, purpose: "login" | "enable"): Promise<number> {
+  const last = await prisma.twoFactorCode.findFirst({ where: { userId, purpose }, orderBy: { createdAt: "desc" }, select: { createdAt: true } })
+  if (!last) return 0
+  return Math.max(0, Math.ceil((last.createdAt.getTime() + 30_000 - Date.now()) / 1000))
+}
+
+export type TwoFactorCheck = "ok" | "invalid" | "expired" | "locked"
+
+/** Verifies a code; consumes it on success, counts attempts on failure. */
+export async function verifyTwoFactorCode(userId: string, purpose: "login" | "enable", code: string): Promise<TwoFactorCheck> {
+  const cleaned = String(code || "").replace(/\D/g, "")
+  const record = await prisma.twoFactorCode.findFirst({ where: { userId, purpose, usedAt: null }, orderBy: { createdAt: "desc" } })
+  if (!record) return "expired"
+  if (record.expiresAt.getTime() < Date.now()) return "expired"
+  if (record.attempts >= TWO_FACTOR_MAX_ATTEMPTS) return "locked"
+  if (cleaned.length === 6 && record.codeHash === hashCode(userId, cleaned)) {
+    await prisma.twoFactorCode.update({ where: { id: record.id }, data: { usedAt: new Date() } })
+    return "ok"
+  }
+  const updated = await prisma.twoFactorCode.update({ where: { id: record.id }, data: { attempts: { increment: 1 } } })
+  return updated.attempts >= TWO_FACTOR_MAX_ATTEMPTS ? "locked" : "invalid"
+}
+
+/** Short-lived, signed "password accepted, code pending" challenge kept in an httpOnly cookie. */
+export async function createMfaChallenge(user: { id: string; tokenVersion: number }): Promise<string> {
+  return new SignJWT({ sub: user.id, purpose: "2fa", tv: user.tokenVersion })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("10m")
+    .sign(getJwtSecret())
+}
+
+export async function readMfaChallenge(request: NextRequest): Promise<{ userId: string; tokenVersion: number } | null> {
+  const token = request.cookies.get(MFA_COOKIE)?.value
+  if (!token) return null
+  try {
+    const { payload } = await jwtVerify(token, getJwtSecret())
+    if (payload.purpose !== "2fa" || typeof payload.sub !== "string") return null
+    return { userId: payload.sub, tokenVersion: typeof payload.tv === "number" ? payload.tv : 0 }
+  } catch {
+    return null
+  }
+}
+
+export function setMfaCookie(response: NextResponse, token: string) {
+  response.cookies.set(MFA_COOKIE, token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", maxAge: 600, path: "/" })
+  return response
+}
+
+export function clearMfaCookie(response: NextResponse) {
+  response.cookies.set(MFA_COOKIE, "", { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", maxAge: 0, path: "/" })
+  return response
+}
+
+export function maskEmail(email: string): string {
+  const [user, domain] = email.split("@")
+  if (!user || !domain) return email
+  const shown = user.length <= 2 ? user[0] ?? "" : user.slice(0, 2)
+  return `${shown}${"•".repeat(Math.max(2, Math.min(6, user.length - shown.length)))}@${domain}`
 }

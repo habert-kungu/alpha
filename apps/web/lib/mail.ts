@@ -159,13 +159,11 @@ function layout(title: string, body: string, preheader?: string): string {
 ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent">${escape(preheader)}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>` : ""}
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:${BRAND.bg}"><tr><td align="center" style="padding:32px 16px">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px">
-    <tr><td style="background:${BRAND.ink};border-radius:14px 14px 0 0;padding:20px 32px">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>
-        <td style="font-size:17px;font-weight:700;letter-spacing:-0.01em;color:#ffffff">
-          <span style="display:inline-block;width:18px;height:18px;margin-right:9px;vertical-align:-3px;border-radius:4px;background:${BRAND.red}"></span>AlphaReserve
-        </td>
-        <td align="right" style="font-size:11px;font-weight:600;letter-spacing:0.12em;color:#9AA3AE">POOL TRADING</td>
-      </tr></table>
+    <tr><td style="background:${BRAND.ink};border-radius:14px 14px 0 0;overflow:hidden;line-height:0">
+      <!-- Branded banner (hosted PNG). The dark cell + alt text keep the header legible when images are blocked. -->
+      <a href="${site}" style="display:block;line-height:0">
+        <img src="${appUrl("/images/email-banner.png")}" width="560" alt="AlphaReserve — Pool Trading" style="display:block;width:100%;max-width:560px;height:auto;border:0;border-radius:14px 14px 0 0" />
+      </a>
     </td></tr>
     <tr><td style="background:#ffffff;border:1px solid ${BRAND.line};border-top:0;border-radius:0 0 14px 14px;padding:32px 32px 28px">
       <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;font-weight:700;color:${BRAND.ink}">${escape(title)}</h1>
@@ -273,6 +271,39 @@ ${details([
 ${button(link, "Choose a new password")}
 ${note("If you weren't expecting this, contact support before using the link.", "warn")}`,
     "An administrator reset your password. Choose a new one with this link."
+  ),
+})
+
+export const buildLoginCode = (to: string, code: string, opts: { purpose: "login" | "enable"; name?: string | null }): MailMessage => {
+  const enabling = opts.purpose === "enable"
+  return {
+    to,
+    subject: enabling ? `${code} is your AlphaReserve verification code` : `${code} is your AlphaReserve sign-in code`,
+    html: layout(
+      enabling ? "Confirm two-step verification" : "Your sign-in code",
+      `${greeting(opts.name)}
+${p(enabling ? "Enter this code to turn on two-step verification for your account." : "Someone — hopefully you — is signing in to your AlphaReserve account. Enter this code to continue.")}
+<p style="margin:18px 0;text-align:center"><span style="display:inline-block;padding:14px 26px;background:${BRAND.panel};border:1px solid ${BRAND.line};border-radius:10px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:30px;font-weight:700;letter-spacing:0.35em;color:${BRAND.ink}">${code}</span></p>
+${details([
+  ["Valid for", "10 minutes"],
+  ["Can be used", "once"],
+])}
+${note(enabling ? "Didn't start this? You can ignore this email — nothing changes without the code." : "If this wasn't you, your password may be known to someone else. Change it from Profile → Security as soon as you can.", enabling ? "info" : "warn")}`,
+      `${code} — your AlphaReserve ${enabling ? "verification" : "sign-in"} code, valid 10 minutes.`
+    ),
+  }
+}
+
+export const buildTwoFactorChanged = (to: string, enabled: boolean, name?: string | null): MailMessage => ({
+  to,
+  subject: enabled ? "Two-step verification is on" : "Two-step verification was turned off",
+  html: layout(
+    enabled ? "Two-step verification is on" : "Two-step verification turned off",
+    `${greeting(name)}
+${p(enabled ? "From now on, signing in to your account needs your password <strong>and</strong> a code we email you." : "Signing in to your account now only needs your password.")}
+${note(enabled ? "Keep access to this inbox — it's where your sign-in codes arrive." : "If you didn't turn this off, change your password and turn two-step verification back on from Profile → Security.", enabled ? "info" : "warn")}
+${button(appUrl("/app/profile"), "Security settings")}`,
+    enabled ? "Two-step verification is now on for your account." : "Two-step verification was turned off for your account."
   ),
 })
 
@@ -436,6 +467,8 @@ export function newDepositAdminEmail(opts: Parameters<typeof buildNewDepositAdmi
   return msg ? sendMail(msg) : Promise.resolve({ sent: false, error: "ADMIN_EMAIL not set" })
 }
 export const customEmail = (to: string, opts: Parameters<typeof buildCustom>[1]) => sendMail(buildCustom(to, opts))
+export const loginCodeEmail = (to: string, code: string, opts: Parameters<typeof buildLoginCode>[2]) => sendMail(buildLoginCode(to, code, opts))
+export const twoFactorChangedEmail = (to: string, enabled: boolean, name?: string | null) => sendMail(buildTwoFactorChanged(to, enabled, name))
 export const testEmail = (to: string) => sendMail(buildTest(to))
 
 /** Every template with sample data — used by the preview script and admin preview. */
@@ -448,6 +481,8 @@ export function sampleTemplates(): { key: string; label: string; message: MailMe
     { key: "deposit-confirmed", label: "Deposit confirmed", message: buildInvestmentDecision(to, { approved: true, amount: 2000, pool: "weekly", targetValue: 20000, name }) },
     { key: "deposit-rejected", label: "Deposit not confirmed", message: buildInvestmentDecision(to, { approved: false, amount: 500, pool: "daily", name }) },
     { key: "cycle-completed", label: "Cycle completed", message: buildCycleCompleted(to, { amount: 2000, pool: "weekly", returnAmount: 20000, name }) },
+    { key: "login-code", label: "Sign-in code (two-step)", message: buildLoginCode(to, "482913", { purpose: "login", name }) },
+    { key: "two-factor-on", label: "Two-step verification on", message: buildTwoFactorChanged(to, true, name) },
     { key: "password-reset", label: "Password reset link", message: buildPasswordReset(to, "sample-token", name) },
     { key: "password-changed", label: "Password changed", message: buildPasswordChanged(to, name) },
     { key: "account-created", label: "Account created by admin", message: buildAccountCreatedByAdmin(to, appUrl("/reset-password?token=sample-token&welcome=1"), name) },
