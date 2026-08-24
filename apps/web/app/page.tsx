@@ -68,7 +68,7 @@ const services = [
 ]
 
 const steps = [
-  { number: "01", title: "Join Telegram", desc: "Connect with our team" },
+  { number: "01", title: "Message us", desc: "Reach the team on Telegram" },
   { number: "02", title: "Choose Plan", desc: "Select your cycle amount" },
   { number: "03", title: "Send Crypto", desc: "Transfer stake to wallet" },
   { number: "04", title: "Get Returns", desc: "Receive guaranteed profit" },
@@ -127,7 +127,7 @@ function Navbar() {
 
         <div className="flex items-center gap-3">
           <a
-            href="https://t.me/+ujxfTTqxAoE4ODNh"
+            href="https://t.me/khan_bashiri"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-foreground hover:text-foreground sm:flex"
@@ -237,13 +237,13 @@ function Hero() {
                   <RiArrowRightLine className="h-4 w-4" />
                 </Link>
                 <a
-                  href="https://t.me/+ujxfTTqxAoE4ODNh"
+                  href="https://t.me/khan_bashiri"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-lg bg-accent px-6 py-3 text-sm font-medium text-accent-foreground transition-all hover:opacity-90"
                 >
                   <RiTelegramLine className="h-4 w-4" />
-                  Join Telegram
+                  Message on Telegram
                 </a>
               </div>
 
@@ -563,7 +563,7 @@ function LiveTelegram() {
       className={`fixed right-6 bottom-6 z-50 transition-all duration-500 ${isVisible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-20 opacity-0"}`}
     >
       <a
-        href="https://t.me/+ujxfTTqxAoE4ODNh"
+        href="https://t.me/khan_bashiri"
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center gap-4 rounded-full bg-primary px-5 py-3 text-white shadow-2xl transition-all hover:scale-105 hover:shadow-xl"
@@ -981,7 +981,7 @@ function Services() {
               </div>
 
               <a
-                href="https://t.me/+ujxfTTqxAoE4ODNh"
+                href="https://t.me/khan_bashiri"
                 className={`mt-auto block w-full rounded-xl py-3 text-center text-sm font-semibold transition-all duration-300 hover:scale-[1.02] ${service.popular ? "bg-primary text-primary-foreground hover:opacity-90" : "bg-foreground text-background hover:opacity-90"}`}
               >
                 {service.cta}
@@ -989,7 +989,7 @@ function Services() {
 
               {service.ctaLink && (
                 <a
-                  href="https://t.me/+ujxfTTqxAoE4ODNh"
+                  href="https://t.me/khan_bashiri"
                   className="mt-3 block text-center text-xs text-muted-foreground hover:text-primary"
                 >
                   {service.ctaLink}
@@ -1007,7 +1007,7 @@ function HowItWorks() {
   const sectionRef = React.useRef<HTMLDivElement>(null)
 
   const steps = [
-    { number: "01", title: "Join Telegram", desc: "Connect with the team" },
+    { number: "01", title: "Message us", desc: "Reach the team on Telegram" },
     { number: "02", title: "Choose Cycle", desc: "48h or weekly" },
     { number: "03", title: "Send Crypto", desc: "USDT confirmed in 1h" },
     { number: "04", title: "Receive Return", desc: "Full USDT return" },
@@ -1117,7 +1117,7 @@ function HowItWorks() {
                   01
                 </span>
                 <p className="mb-2 text-xl font-bold text-primary">
-                  Join Telegram
+                  Message on Telegram
                 </p>
                 <p className="text-sm text-muted-foreground">
                   Connect with the team
@@ -1201,13 +1201,13 @@ function HowItWorks() {
 
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3 sm:mt-14 sm:gap-4">
           <a
-            href="https://t.me/+ujxfTTqxAoE4ODNh"
+            href="https://t.me/khan_bashiri"
             className="rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white transition-colors hover:opacity-90 sm:px-6 sm:py-3"
           >
-            Join Telegram
+            Message on Telegram
           </a>
           <span className="text-xs text-muted-foreground sm:text-sm">
-            Free to join
+            Replies within minutes
           </span>
         </div>
       </div>
@@ -1235,13 +1235,13 @@ function Community() {
         </p>
 
         <a
-          href="https://t.me/+ujxfTTqxAoE4ODNh"
+          href="https://t.me/khan_bashiri"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 rounded-lg bg-card px-8 py-4 text-lg font-bold text-primary transition-colors hover:bg-card/90"
         >
           <RiTelegramLine className="h-5 w-5" />
-          Join Now
+          Message us
         </a>
       </div>
     </section>
