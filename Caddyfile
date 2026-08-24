@@ -3,10 +3,26 @@
 # domain's DNS points at this server and ports 80/443 are reachable.
 {$DOMAIN} {
 	encode zstd gzip
-	reverse_proxy web:3000
+	reverse_proxy {$WEB_UPSTREAM:web:3000}
 }
 
 # Redirect www -> apex (requires a www A record too; harmless if unused).
 www.{$DOMAIN} {
 	redir https://{$DOMAIN}{uri} permanent
+}
+
+# ---------------------------------------------------------------------------
+# Second app fronted by this same Caddy (optional).
+#
+# Set ELITE_DOMAIN to enable it; leave it unset and these blocks are inert.
+# The elite container must be attached to the shared `edge` network and named
+# so this upstream resolves — see DEPLOYMENT.md, "Running both apps".
+# ---------------------------------------------------------------------------
+{$ELITE_DOMAIN:elite.invalid} {
+	encode zstd gzip
+	reverse_proxy {$ELITE_UPSTREAM:elite-web:3000}
+}
+
+www.{$ELITE_DOMAIN:www-elite.invalid} {
+	redir https://{$ELITE_DOMAIN}{uri} permanent
 }
