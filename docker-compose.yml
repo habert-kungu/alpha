@@ -30,9 +30,6 @@ services:
       MAIL_FROM: ${MAIL_FROM:-AlphaReserve <no-reply@${DOMAIN:-localhost}>}
       APP_URL: ${APP_URL:-https://${DOMAIN:-localhost}}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-}
-    networks:
-      - default
-      - edge
     volumes:
       - alphareserve-data:/data
     restart: unless-stopped
@@ -55,23 +52,11 @@ services:
       - "443:443"
     environment:
       DOMAIN: ${DOMAIN:?Set DOMAIN (e.g. app.example.com) to use the proxy}
-      # Optional second app fronted by this Caddy (see DEPLOYMENT.md).
-      ELITE_DOMAIN: ${ELITE_DOMAIN:-}
-      ELITE_UPSTREAM: ${ELITE_UPSTREAM:-elite-web:3000}
-    networks:
-      - default
-      - edge
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
     restart: unless-stopped
-
-networks:
-  # Shared with any other app this Caddy fronts. Create once on the host:
-  #   docker network create edge
-  edge:
-    external: true
 
 volumes:
   alphareserve-data:

@@ -84,55 +84,6 @@ panel if one is offered — it's the biggest factor in staying out of spam.
 - **From a shell** (uses `apps/web/.env`): `cd apps/web && npx tsx scripts/send-test-email.ts you@example.com`
 - **No credentials yet?** `npx tsx scripts/send-test-email.ts --ethereal` sends every template to a throwaway [Ethereal](https://ethereal.email) inbox and prints preview links, so you can check rendering before wiring a real provider.
 
-## Running both apps on one VPS
-
-`alpha` (this repo) and `elite` are separate apps with separate databases, but
-they can share one server and one Caddy. Two things would otherwise collide:
-the host port, and ports 80/443.
-
-The fix: **one Caddy** — this repo's — fronts both, and each app binds a
-different localhost port.
-
-Deploy this app first (steps above), then:
-
-```bash
-# 1. Get elite and give it its own port + domain
-git clone https://github.com/habert-kungu/elite.git
-cd elite
-
-cat > .env <<'EOF'
-WEB_PORT=3001
-JWT_SECRET=REPLACE_ME              # openssl rand -base64 32 — must differ from alpha's
-APP_URL=https://elitequest.net
-DEPOSIT_USDT_TRC20_ADDRESS=...
-DEPOSIT_BTC_ADDRESS=...
-EOF
-
-# 2. Start it WITHOUT its own proxy (no --profile proxy)
-docker compose up -d --build
-```
-
-Then tell this repo's Caddy about it:
-
-```bash
-cd ../alpha
-echo 'ELITE_DOMAIN=elitequest.net' >> .env
-docker compose --profile proxy up -d
-```
-
-Caddy resolves the second app by container name (`elite-web:3000`) over the
-shared `edge` network, and requests a certificate for `ELITE_DOMAIN` on first
-request. Point that domain's A record at the same VPS IP first.
-
-Notes:
-
-- Each app keeps its **own** `JWT_SECRET`. Sharing one would make a session
-  issued by one app valid on the other.
-- Volumes are namespaced per compose project, so the two SQLite databases never
-  touch each other.
-- To take one down without affecting the other: `docker compose down` inside
-  that app's directory.
-
 ## Updating / redeploying
 
 ```bash
@@ -208,15 +159,6 @@ EOF
 `docker compose` reads that `.env` automatically for `${DOMAIN}` and `${JWT_SECRET}`.
 
 ### 4. Launch with the proxy
-
-Create the shared Docker network once (Caddy uses it to reach the app, and to
-reach a second app later — see *Running both apps* below):
-
-```bash
-docker network create edge
-```
-
-Then build and start:
 
 ```bash
 docker compose --profile proxy up -d --build
