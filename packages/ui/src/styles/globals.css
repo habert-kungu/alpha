@@ -233,8 +233,11 @@
     @apply w-full text-[13px];
   }
   .table-linear th {
-    @apply text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider py-2 px-3 border-b border-border;
+    @apply text-[11px] font-medium text-muted-foreground uppercase tracking-wider py-2 px-3 border-b border-border;
   }
+  /* Left is only the default: :where() keeps specificity at zero so a
+     `text-right` utility on a numeric header still wins over this recipe. */
+  :where(.table-linear th) { text-align: left; }
   .table-linear td {
     @apply py-2 px-3 border-b border-border;
   }

@@ -193,8 +193,8 @@ export default function TransactionsPage() {
                 <th className="px-4 py-3 text-left text-[10px] font-mono uppercase text-muted-foreground">ID</th>
                 <th className="px-4 py-3 text-left text-[10px] font-mono uppercase text-muted-foreground">Date</th>
                 <th className="px-4 py-3 text-left text-[10px] font-mono uppercase text-muted-foreground">Type</th>
-                <th className="px-4 py-3 text-left text-[10px] font-mono uppercase text-muted-foreground">Amount</th>
-                <th className="px-4 py-3 text-left text-[10px] font-mono uppercase text-muted-foreground">Net</th>
+                <th className="px-4 py-3 text-right text-[10px] font-mono uppercase text-muted-foreground">Amount</th>
+                <th className="px-4 py-3 text-right text-[10px] font-mono uppercase text-muted-foreground">Net</th>
                 <th className="px-4 py-3 text-left text-[10px] font-mono uppercase text-muted-foreground">Note</th>
               </tr>
             </thead>
@@ -221,8 +221,8 @@ export default function TransactionsPage() {
                       {tx.type.charAt(0).toUpperCase() + tx.type.slice(1)}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className={`text-sm font-medium ${
+                  <td className="px-4 py-3 text-right">
+                    <div className={`text-sm font-medium tabular-nums ${
                       tx.type === 'return' ? 'text-[var(--color-success)]' : 'text-foreground'
                     }`}>
                       {tx.type === 'deposit' || tx.type === 'withdrawal' ? (
@@ -233,8 +233,8 @@ export default function TransactionsPage() {
                     </div>
                     <div className="text-[10px] text-muted-foreground">{tx.currency}</div>
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="text-sm font-medium text-foreground">${tx.net.toLocaleString()}</div>
+                  <td className="px-4 py-3 text-right">
+                    <div className="text-sm font-medium tabular-nums text-foreground">${tx.net.toLocaleString()}</div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="text-xs text-muted-foreground max-w-[180px] truncate">{tx.note}</div>
