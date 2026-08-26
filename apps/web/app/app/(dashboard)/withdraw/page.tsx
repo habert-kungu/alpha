@@ -4,16 +4,39 @@
 import { Card } from "@/components/ui"
 import * as React from "react"
 import Link from "next/link"
+import { useAuth } from "@/app/providers/auth-provider"
+import { useCachedFetch, invalidateCache } from "@/lib/use-cached-fetch"
 import { WITHDRAWAL_TAX_RATE, withdrawalTax } from "@/lib/trading"
 
-const AVAILABLE_BALANCE = 4250.0
+interface WithdrawalRow {
+  id: string
+  amount: number
+  tax: number
+  status: string
+  createdAt: string
+}
+
+interface WithdrawalsResponse {
+  balance: { returns: number; withdrawn: number; available: number }
+  minimum: number
+  withdrawals: WithdrawalRow[]
+}
 
 export default function WithdrawPage() {
+  const { user } = useAuth()
+  const { data, loading, refresh } = useCachedFetch<WithdrawalsResponse>(user ? "/api/user/withdrawals" : null, { ttl: 30_000 })
+  const balance = data?.balance
+  const available = balance?.available ?? 0
+  const minimum = data?.minimum ?? 50
+
   const [amount, setAmount] = React.useState("")
   const [address, setAddress] = React.useState("")
   const [network, setNetwork] = React.useState("TRC20")
   const [showConfirm, setShowConfirm] = React.useState(false)
   const [taxAcknowledged, setTaxAcknowledged] = React.useState(false)
+  const [submitting, setSubmitting] = React.useState(false)
+  const [error, setError] = React.useState("")
+  const [success, setSuccess] = React.useState("")
 
   const withdrawAmount = amount ? parseFloat(amount) : 0
   // The 16.5% tax is settled up front by the client — it is never taken off the
@@ -22,20 +45,42 @@ export default function WithdrawPage() {
   const receiveAmount = withdrawAmount
   const taxPercent = `${(WITHDRAWAL_TAX_RATE * 100).toFixed(1)}%`
 
-  const handleSubmit = () => {
-    const message = `💰 *Withdrawal Request*\n\n*Amount:* $${withdrawAmount}\n*Tax deposit (${taxPercent}):* $${tax.toFixed(2)} — settled before payout\n*You receive:* $${receiveAmount.toFixed(2)}\n*Network:* ${network}\n*Address:* ${address}`
-    const telegramUrl = `https://t.me/khan_bashiri?text=${encodeURIComponent(message)}`
-    window.open(telegramUrl, "_blank")
-    setShowConfirm(false)
-    setAmount("")
-    setAddress("")
-    setTaxAcknowledged(false)
+  const handleSubmit = async () => {
+    setSubmitting(true)
+    setError("")
+    try {
+      const res = await fetch("/api/user/withdrawals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: withdrawAmount, address, network, taxAcknowledged }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setError(json.error || "Couldn't submit your withdrawal")
+        return
+      }
+
+      // Keep the Telegram hand-off so support sees the request immediately.
+      const message = `💰 *Withdrawal Request*\n\n*Amount:* $${withdrawAmount}\n*Tax deposit (${taxPercent}):* $${tax.toFixed(2)} — settled before payout\n*You receive:* $${receiveAmount.toFixed(2)}\n*Network:* ${network}\n*Address:* ${address}\n*Reference:* ${json.withdrawal.id}`
+      window.open(`https://t.me/khan_bashiri?text=${encodeURIComponent(message)}`, "_blank")
+
+      setShowConfirm(false)
+      setAmount("")
+      setTaxAcknowledged(false)
+      setSuccess(`Your $${withdrawAmount.toLocaleString()} withdrawal is pending. We'll email you once it's paid.`)
+      invalidateCache("/api/user/")
+      await refresh()
+    } catch {
+      setError("Network error. Please try again.")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const isValid =
-    withdrawAmount >= 50 &&
-    withdrawAmount <= AVAILABLE_BALANCE &&
-    address.length > 0 &&
+    withdrawAmount >= minimum &&
+    withdrawAmount <= available &&
+    address.trim().length >= 20 &&
     taxAcknowledged
 
   return (
@@ -70,10 +115,11 @@ export default function WithdrawPage() {
                   Amount (USDT)
                 </label>
                 <button
-                  onClick={() => setAmount(AVAILABLE_BALANCE.toString())}
-                  className="text-[10px] font-medium text-[oklch(0.62_0.12_178)] hover:opacity-80 sm:text-xs"
+                  onClick={() => setAmount(String(available))}
+                  disabled={available <= 0}
+                  className="text-[10px] font-medium text-[oklch(0.62_0.12_178)] hover:opacity-80 disabled:opacity-40 sm:text-xs"
                 >
-                  Max: ${AVAILABLE_BALANCE.toLocaleString()}
+                  Max: ${available.toLocaleString()}
                 </button>
               </div>
               <input
@@ -161,12 +207,27 @@ export default function WithdrawPage() {
               </span>
             </label>
 
+            {error && (
+              <div className="mb-3 rounded-lg border border-destructive/25 bg-[var(--bg-danger)] p-3 text-xs text-destructive">{error}</div>
+            )}
+            {success && (
+              <div className="mb-3 rounded-lg border border-[var(--color-success)]/25 bg-[var(--bg-success)] p-3 text-xs text-foreground">{success}</div>
+            )}
+            {!loading && available <= 0 && (
+              <div className="mb-3 rounded-lg bg-secondary/50 p-3 text-xs text-muted-foreground">
+                You have nothing to withdraw yet. Returns become withdrawable once a cycle completes.
+              </div>
+            )}
+            {withdrawAmount > available && available > 0 && (
+              <div className="mb-3 text-xs text-destructive">You can withdraw up to ${available.toLocaleString()}.</div>
+            )}
+
             <button
               onClick={() => isValid && setShowConfirm(true)}
               disabled={!isValid}
               className="w-full rounded-lg bg-[oklch(0.21_0_0)] py-3 text-sm font-medium text-[oklch(1_0_180)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 sm:py-4 sm:text-base"
             >
-              Request via Telegram
+              Request withdrawal
             </button>
           </Card>
         </div>
@@ -177,11 +238,23 @@ export default function WithdrawPage() {
               Available
             </div>
             <div className="text-2xl font-bold text-foreground sm:text-3xl">
-              ${AVAILABLE_BALANCE.toLocaleString()}
+              {loading ? "—" : `$${available.toLocaleString()}`}
             </div>
             <div className="mt-0.5 text-[10px] text-muted-foreground sm:text-xs">
-              USDT
+              USDT · completed returns only
             </div>
+            {balance && (
+              <dl className="mt-3 space-y-1 border-t border-border pt-3 text-[10px] text-muted-foreground sm:text-xs">
+                <div className="flex justify-between">
+                  <dt>Returns paid to you</dt>
+                  <dd className="text-foreground">${balance.returns.toLocaleString()}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt>Withdrawn or pending</dt>
+                  <dd>-${balance.withdrawn.toLocaleString()}</dd>
+                </div>
+              </dl>
+            )}
           </Card>
 
           <Card className="p-4 sm:p-5">
@@ -190,7 +263,8 @@ export default function WithdrawPage() {
             </h3>
             <ul className="space-y-2 text-[10px] text-muted-foreground sm:space-y-3 sm:text-xs">
               {[
-                "Min withdrawal: $50 USDT",
+                `Min withdrawal: $${minimum} USDT`,
+                "Only completed cycle returns can be withdrawn",
                 `Tax: ${taxPercent}, deposited before the payout is released`,
                 "You receive the full amount — nothing is deducted",
                 "Processing: 24-48 hours",
@@ -267,9 +341,10 @@ export default function WithdrawPage() {
               </button>
               <button
                 onClick={handleSubmit}
-                className="flex-1 rounded-lg bg-[oklch(0.21_0_0)] py-2.5 text-sm font-medium text-[oklch(1_0_180)] transition-opacity hover:opacity-90"
+                disabled={submitting}
+                className="flex-1 rounded-lg bg-[oklch(0.21_0_0)] py-2.5 text-sm font-medium text-[oklch(1_0_180)] transition-opacity hover:opacity-90 disabled:opacity-50"
               >
-                Confirm
+                {submitting ? "Submitting…" : "Confirm"}
               </button>
             </div>
           </div>
