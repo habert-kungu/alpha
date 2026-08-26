@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAdminUser } from '@/lib/auth'
 import prisma from '@/lib/db'
+import { settleMaturedCycles } from '@/lib/settle'
 import { effectiveCycle } from '@/lib/trading'
 
 export async function GET(request: NextRequest) {
@@ -8,6 +9,9 @@ export async function GET(request: NextRequest) {
     if (!(await getAdminUser(request))) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
+
+    // Settle first so a plan that ran its term reads "completed", not "active".
+    await settleMaturedCycles()
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
