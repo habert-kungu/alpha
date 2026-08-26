@@ -5,13 +5,26 @@ import Link from "next/link"
 import { useAuth } from "@/app/providers/auth-provider"
 
 export default function SignupPage() {
-  const { signUp } = useAuth()
+  const { signUp, verifyTwoFactor, resendTwoFactor } = useAuth()
+  const [step, setStep] = React.useState<"details" | "code">("details")
   const [name, setName] = React.useState("")
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
   const [telegram, setTelegram] = React.useState("")
+  // Honeypot: invisible to people, irresistible to form-filling bots.
+  const [website, setWebsite] = React.useState("")
+  const [code, setCode] = React.useState("")
+  const [maskedEmail, setMaskedEmail] = React.useState("")
+  const [notice, setNotice] = React.useState("")
+  const [resendIn, setResendIn] = React.useState(0)
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState("")
+
+  React.useEffect(() => {
+    if (resendIn <= 0) return
+    const t = setTimeout(() => setResendIn((n) => n - 1), 1000)
+    return () => clearTimeout(t)
+  }, [resendIn])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -19,11 +32,40 @@ export default function SignupPage() {
     setLoading(true)
 
     try {
-      // Use the auth provider so the user is hydrated in context before redirect.
-      await signUp({ name, email, password, telegram })
+      // Every new account verifies its email before it can be used.
+      const result = await signUp({ name, email, password, telegram, website })
+      setMaskedEmail(result.email || email)
+      setStep("code")
+      setResendIn(30)
+      setNotice(result.emailSent === false ? "We couldn't email the code — contact support." : "")
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred. Please try again.")
+    } finally {
       setLoading(false)
+    }
+  }
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+    setLoading(true)
+    try {
+      await verifyTwoFactor(code)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Verification failed")
+      setLoading(false)
+    }
+  }
+
+  const handleResend = async () => {
+    setError("")
+    setNotice("")
+    try {
+      const r = await resendTwoFactor()
+      setResendIn(30)
+      setNotice(`A new code was sent to ${r.email || maskedEmail}.`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't resend the code")
     }
   }
 
@@ -74,8 +116,18 @@ export default function SignupPage() {
             </Link>
           </div>
 
-          <h1 className="text-xl font-bold text-foreground mb-1">Create account</h1>
-          <p className="text-muted-foreground text-sm mb-6">Enter your details</p>
+          <h1 className="text-xl font-bold text-foreground mb-1">{step === "code" ? "Verify your email" : "Create account"}</h1>
+          <p className="text-muted-foreground text-sm mb-6">
+            {step === "code" ? (
+              <>We sent a 6-digit code to <span className="font-medium text-foreground">{maskedEmail}</span>. It&apos;s valid for 10 minutes.</>
+            ) : (
+              "Enter your details"
+            )}
+          </p>
+
+          {notice && (
+            <div className="mb-4 rounded-lg border border-border bg-secondary/50 p-3 text-xs text-muted-foreground">{notice}</div>
+          )}
 
           {error && (
             <div className="mb-4 p-3 bg-[var(--bg-danger)] border border-destructive/25 rounded-lg text-destructive text-xs">
@@ -83,7 +135,51 @@ export default function SignupPage() {
             </div>
           )}
 
+          {step === "code" ? (
+            <form onSubmit={handleVerify} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1.5">Verification code</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="000000"
+                  className="w-full px-3 py-2.5 border border-border rounded-lg text-center text-lg font-mono tracking-[0.4em] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-foreground focus:ring-1 focus:ring-foreground transition-colors"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading || code.length !== 6}
+                className="w-full py-2.5 bg-foreground text-background rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                {loading ? "Verifying..." : "Verify & continue"}
+              </button>
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resendIn > 0}
+                className="w-full text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+              >
+                {resendIn > 0 ? `Resend code in ${resendIn}s` : "Resend code"}
+              </button>
+            </form>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Honeypot — hidden from people, so anything typed here is a bot. */}
+            <input
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              className="hidden"
+            />
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Full Name</label>
               <input
@@ -140,6 +236,7 @@ export default function SignupPage() {
               {loading ? "Creating..." : "Create account"}
             </button>
           </form>
+          )}
 
           <p className="mt-4 text-xs text-muted-foreground text-center">
             By creating an account, you agree to our{" "}

@@ -12,6 +12,8 @@ interface Transaction {
   amount: number
   net: number
   fee: number
+  /** Withdrawal tax the client deposits up front — never deducted from `net`. */
+  tax: number
   currency: string
   status: string
   note: string
@@ -37,7 +39,7 @@ export default function TransactionsPage() {
     totalDeposits: transactions.filter(t => t.type === 'deposit').reduce((sum, t) => sum + t.net, 0),
     totalReturns: transactions.filter(t => t.type === 'return').reduce((sum, t) => sum + t.net, 0),
     totalWithdrawals: transactions.filter(t => t.type === 'withdrawal').reduce((sum, t) => sum + t.net, 0),
-    totalFees: transactions.reduce((sum, t) => t.type !== 'return' ? sum + (t.fee || 0) : sum, 0),
+    totalTax: transactions.reduce((sum, t) => sum + (t.tax || 0), 0),
   }
 
   const formatDate = (dateStr: string) => {
@@ -87,8 +89,8 @@ export default function TransactionsPage() {
           <div className="text-sm sm:text-lg font-medium text-foreground">-${stats.totalWithdrawals.toLocaleString()}</div>
         </Card>
         <Card className="p-3 sm:p-4">
-          <div className="text-[10px] sm:text-[11px] text-muted-foreground uppercase font-mono mb-1">Fees Paid</div>
-          <div className="text-sm sm:text-lg font-medium text-muted-foreground">-${stats.totalFees.toLocaleString()}</div>
+          <div className="text-[10px] sm:text-[11px] text-muted-foreground uppercase font-mono mb-1">Tax Paid</div>
+          <div className="text-sm sm:text-lg font-medium text-muted-foreground">${stats.totalTax.toLocaleString()}</div>
         </Card>
       </div>
 
@@ -280,14 +282,20 @@ export default function TransactionsPage() {
                 <span className="text-xs text-muted-foreground">Amount</span>
                 <span className="text-xs font-medium text-foreground">${selectedTx.amount.toLocaleString()} {selectedTx.currency}</span>
               </div>
-              {selectedTx.type !== 'return' && (
+              {selectedTx.type === 'withdrawal' && (
                 <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-xs text-muted-foreground">Fee (16.5%)</span>
+                  <span className="text-xs text-muted-foreground">Tax (16.5%, paid separately)</span>
+                  <span className="text-xs font-medium text-foreground">${selectedTx.tax.toLocaleString()}</span>
+                </div>
+              )}
+              {selectedTx.type !== 'withdrawal' && selectedTx.fee > 0 && (
+                <div className="flex justify-between py-2 border-b border-border">
+                  <span className="text-xs text-muted-foreground">Fee</span>
                   <span className="text-xs font-medium text-muted-foreground">-${selectedTx.fee.toLocaleString()}</span>
                 </div>
               )}
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-xs text-muted-foreground">Net Received</span>
+                <span className="text-xs text-muted-foreground">{selectedTx.type === 'withdrawal' ? 'You received' : 'Net Received'}</span>
                 <span className="text-xs font-medium text-foreground">${selectedTx.net.toLocaleString()}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-border">

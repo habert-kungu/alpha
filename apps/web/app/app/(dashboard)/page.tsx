@@ -600,7 +600,7 @@ export default function DashboardPage() {
                   <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
                 </svg>
                 <span className="text-xs sm:text-sm font-medium">Withdraw</span>
-                <span className="ml-auto text-[9px] sm:text-[10px] text-muted-foreground">16.5% fee</span>
+                <span className="ml-auto text-[9px] sm:text-[10px] text-muted-foreground">16.5% tax upfront</span>
               </Link>
             </div>
           </Card>

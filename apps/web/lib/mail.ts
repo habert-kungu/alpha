@@ -387,7 +387,7 @@ ${details([
   ["Profit", `<span style="color:${BRAND.green}">+${money(opts.returnAmount - opts.amount)}</span>`],
 ])}
 ${button(appUrl("/app/withdraw"), "Withdraw")}
-${note("Withdrawals are processed in USDT (TRC20). A 16.5% processing fee applies at withdrawal.")}`,
+${note("Withdrawals are processed in USDT (TRC20) and paid in full. A 16.5% tax is deposited separately before a withdrawal is released — it is never deducted from your payout.")}`,
     `${money(opts.returnAmount)} is ready on your dashboard.`
   ),
 })

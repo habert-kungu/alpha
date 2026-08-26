@@ -27,8 +27,10 @@ interface UsersResponse {
   total: number
   page: number
   pageCount: number
-  totals: { users: number; deposits: number; returns: number }
+  totals: { users: number; admins: number; deposits: number; returns: number }
 }
+
+type RoleFilter = "all" | "admin" | "user"
 
 function useDebounced<T>(value: T, ms = 300) {
   const [v, setV] = React.useState(value)
@@ -43,13 +45,15 @@ export default function UsersPage() {
   const { user: me } = useAuth()
   const [search, setSearch] = React.useState("")
   const [page, setPage] = React.useState(1)
+  const [roleFilter, setRoleFilter] = React.useState<RoleFilter>("all")
   const q = useDebounced(search.trim())
 
-  const key = `/api/admin/users?page=${page}&pageSize=${PAGE_SIZE}&q=${encodeURIComponent(q)}`
+  const key = `/api/admin/users?page=${page}&pageSize=${PAGE_SIZE}&q=${encodeURIComponent(q)}${roleFilter === "all" ? "" : `&role=${roleFilter}`}`
   const { data, loading, refreshing, refresh } = useCachedFetch<UsersResponse>(key, { ttl: 60_000 })
 
   const [showAdd, setShowAdd] = React.useState(false)
   const [removing, setRemoving] = React.useState<AdminUser | null>(null)
+  const [revoking, setRevoking] = React.useState<AdminUser | null>(null)
   const [resetting, setResetting] = React.useState<AdminUser | null>(null)
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState("")
@@ -67,6 +71,11 @@ export default function UsersPage() {
 
   const changeSearch = (v: string) => {
     setSearch(v)
+    setPage(1)
+  }
+
+  const changeRoleFilter = (v: RoleFilter) => {
+    setRoleFilter(v)
     setPage(1)
   }
 
@@ -155,17 +164,30 @@ export default function UsersPage() {
     }
   }
 
-  const toggleRole = async (u: AdminUser) => {
-    const role = u.role === "admin" ? "user" : "admin"
+  const setRole = async (u: AdminUser, role: "admin" | "user") => {
     setBusy(true)
     setError("")
     try {
       const res = await fetch(`/api/admin/users/${u.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role }) })
       const json = await res.json()
-      if (!res.ok) setError(json.error || "Failed to update role")
-      else await afterMutation()
+      if (!res.ok) {
+        setError(json.error || "Failed to update role")
+        return false
+      }
+      await afterMutation()
+      return true
     } finally {
       setBusy(false)
+    }
+  }
+
+  /** Revoking admin signs the account out everywhere, so it is confirmed first. */
+  const handleRevokeAdmin = async () => {
+    if (!revoking) return
+    const name = revoking.name || revoking.email
+    if (await setRole(revoking, "user")) {
+      setRevoking(null)
+      setNotice(<><strong>{name}</strong> is no longer an admin. Their sessions were signed out.</>)
     }
   }
 
@@ -175,7 +197,9 @@ export default function UsersPage() {
       { label: "View investor", href: `/app/admin/users/${u.id}` },
       { label: "Email", href: `/app/admin/communications?users=${u.id}` },
       { label: "Reset password", onClick: () => { setError(""); setResetting(u) } },
-      { label: u.role === "admin" ? "Make regular user" : "Make admin", onClick: () => toggleRole(u), disabled: busy || isMe, title: isMe ? "You can't change your own role" : undefined },
+      u.role === "admin"
+        ? { label: "Revoke admin", onClick: () => { setError(""); setRevoking(u) }, danger: true, disabled: busy || isMe, title: isMe ? "You can't change your own role" : undefined }
+        : { label: "Make admin", onClick: () => setRole(u, "admin"), disabled: busy || isMe, title: isMe ? "You can't change your own role" : undefined },
       { label: "Remove", onClick: () => { setError(""); setRemoving(u) }, danger: true, disabled: busy || isMe, title: isMe ? "You can't remove your own account" : undefined },
     ]
   }
@@ -213,11 +237,12 @@ export default function UsersPage() {
           <button onClick={() => setNotice(null)} className="text-muted-foreground hover:text-foreground" aria-label="Dismiss">✕</button>
         </div>
       )}
-      {error && !showAdd && !removing && !resetting && <div className="rounded-lg border border-destructive/25 bg-[var(--bg-danger)] p-3 text-xs text-destructive">{error}</div>}
+      {error && !showAdd && !removing && !resetting && !revoking && <div className="rounded-lg border border-destructive/25 bg-[var(--bg-danger)] p-3 text-xs text-destructive">{error}</div>}
 
       <StatGrid
         items={[
           { label: "Total Users", value: data.totals.users },
+          { label: "Admins", value: data.totals.admins },
           { label: "Total Deposits", value: `$${data.totals.deposits.toLocaleString()}` },
           { label: "Total Returns", value: `$${data.totals.returns.toLocaleString()}`, className: "text-[var(--color-success)]" },
         ]}
@@ -233,6 +258,23 @@ export default function UsersPage() {
             <input type="search" value={search} onChange={(e) => changeSearch(e.target.value)} placeholder="Search by name, email or Telegram…" className={inputCls} />
             {refreshing && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground">Updating…</span>}
           </div>
+        </div>
+        <div className="mt-2 flex items-center gap-1.5">
+          {([
+            { key: "all", label: "All" },
+            { key: "admin", label: "Admins" },
+            { key: "user", label: "Investors" },
+          ] as { key: RoleFilter; label: string }[]).map((f) => (
+            <button
+              key={f.key}
+              onClick={() => changeRoleFilter(f.key)}
+              className={`rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+                roleFilter === f.key ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground hover:bg-secondary"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
       </Card>
 
@@ -261,7 +303,7 @@ export default function UsersPage() {
             </div>
           </Card>
         ))}
-        {data.users.length === 0 && <Card className="p-8 text-center text-sm text-muted-foreground">{q ? `No users match “${q}”` : "No users yet"}</Card>}
+        {data.users.length === 0 && <Card className="p-8 text-center text-sm text-muted-foreground">{q ? `No users match “${q}”` : roleFilter === "admin" ? "No admins yet" : roleFilter === "user" ? "No investors yet" : "No users yet"}</Card>}
       </div>
 
       {/* Desktop: table */}
@@ -291,7 +333,7 @@ export default function UsersPage() {
               </tr>
             ))}
             {data.users.length === 0 && (
-              <tr><td colSpan={7} className="px-3 py-8 text-center text-sm text-muted-foreground">{q ? `No users match “${q}”` : "No users yet"}</td></tr>
+              <tr><td colSpan={7} className="px-3 py-8 text-center text-sm text-muted-foreground">{q ? `No users match “${q}”` : roleFilter === "admin" ? "No admins yet" : roleFilter === "user" ? "No investors yet" : "No users yet"}</td></tr>
             )}
           </tbody>
         </table>
@@ -344,6 +386,22 @@ export default function UsersPage() {
             <div className="flex justify-end gap-2">
               <button onClick={() => setResetting(null)} disabled={busy} className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground">Cancel</button>
               <button onClick={handleResetPassword} disabled={busy} className="rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{busy ? "Resetting…" : "Reset & email"}</button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Revoke admin */}
+      <Modal open={!!revoking} onClose={() => !busy && setRevoking(null)} title="Revoke admin">
+        {revoking && (
+          <div className="space-y-4">
+            {error && <div className="rounded-lg border border-destructive/25 bg-[var(--bg-danger)] p-2.5 text-xs text-destructive">{error}</div>}
+            <p className="text-sm text-foreground">
+              Remove admin access from <strong>{revoking.name || revoking.email}</strong>? They keep their account and history as a regular investor, lose the admin panel, and are signed out of every device.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setRevoking(null)} disabled={busy} className="rounded-lg border border-border px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground">Cancel</button>
+              <button onClick={handleRevokeAdmin} disabled={busy} className="rounded-lg bg-destructive px-3 py-2 text-xs font-medium text-destructive-foreground hover:opacity-90 disabled:opacity-50">{busy ? "Revoking…" : "Revoke admin"}</button>
             </div>
           </div>
         )}

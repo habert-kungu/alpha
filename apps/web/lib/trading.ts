@@ -23,6 +23,11 @@ export const POOLS: Record<PoolType, PoolConfig> = {
 export const MIN_DEPOSIT_USD = 500
 export const MAX_DEPOSIT_USD = 1_000_000
 
+/**
+ * Withholding tax on a withdrawal: 16.5%. It is **never** deducted from the
+ * payout — the client settles it up front (a separate deposit) and then
+ * receives the full amount they asked for.
+ */
 export const WITHDRAWAL_TAX_RATE = 0.165 // 16.5%
 
 /**
@@ -91,9 +96,12 @@ export interface UserStats {
 }
 
 export interface WithdrawalCalculation {
-  grossAmount: number
-  taxAmount: number
-  netAmount: number
+  /** What the client asked to withdraw. */
+  amount: number
+  /** 16.5% tax, deposited by the client before the payout is released. */
+  taxDue: number
+  /** What actually reaches the wallet — the full amount, nothing withheld. */
+  payout: number
 }
 
 export function calculateTargetReturn(amount: number, pool: PoolType): number {
@@ -102,14 +110,21 @@ export function calculateTargetReturn(amount: number, pool: PoolType): number {
   return Math.round(amount * config.roiMultiplier)
 }
 
-export function calculateWithdrawal(amount: number): WithdrawalCalculation {
+/**
+ * The tax a client must deposit before the given amount can be withdrawn.
+ * Kept separate from the payout so it can never be netted off by accident.
+ */
+export function withdrawalTax(amount: number): number {
   const safeAmount = Number.isFinite(amount) && amount > 0 ? amount : 0
-  const taxAmount = Math.round(safeAmount * WITHDRAWAL_TAX_RATE * 100) / 100
-  const netAmount = Math.round((safeAmount - taxAmount) * 100) / 100
+  return Math.round(safeAmount * WITHDRAWAL_TAX_RATE * 100) / 100
+}
+
+export function calculateWithdrawal(amount: number): WithdrawalCalculation {
+  const safeAmount = Math.round((Number.isFinite(amount) && amount > 0 ? amount : 0) * 100) / 100
   return {
-    grossAmount: Math.round(safeAmount * 100) / 100,
-    taxAmount,
-    netAmount,
+    amount: safeAmount,
+    taxDue: withdrawalTax(safeAmount),
+    payout: safeAmount,
   }
 }
 
